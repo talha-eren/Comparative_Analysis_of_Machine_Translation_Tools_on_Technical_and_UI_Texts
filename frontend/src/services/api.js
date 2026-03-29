@@ -9,13 +9,14 @@ const api = axios.create({
   }
 })
 
-export const translateText = async (text, sourceLang = 'en', targetLang = 'tr', translators = ['google', 'deepl', 'microsoft', 'amazon'], reference = null) => {
+export const translateText = async (text, sourceLang = 'en', targetLang = 'tr', translators = ['google', 'deepl', 'microsoft', 'amazon'], reference = null, category = 'technical') => {
   const response = await api.post('/api/translate', {
     text,
     source_lang: sourceLang,
     target_lang: targetLang,
     translators,
-    reference
+    reference,
+    category
   })
   return response.data
 }

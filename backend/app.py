@@ -1,7 +1,7 @@
 """
-Flask Backend - Makine Çeviri Karşılaştırma API
+Flask Backend - Makine Ceviri Karsilastirma API
 
-Ana uygulama dosyası
+Ana uygulama dosyasi
 """
 
 import os
@@ -39,9 +39,9 @@ CORS(app)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key')
 app.config['JSON_AS_ASCII'] = False
 
-# Çeviri araçlarını başlat
+# Ceviri araclarini baslat
 print("\n" + "="*60)
-print("Çeviri Araçları Başlatılıyor")
+print("Ceviri Araclari Baslatiliyor")
 print("="*60 + "\n")
 
 translators = {
@@ -51,15 +51,15 @@ translators = {
     'amazon': AmazonTranslator()
 }
 
-# Kullanılabilir araçları kontrol et
+# Kullanilabilir araclari kontrol et
 available_translators = {
     name: translator 
     for name, translator in translators.items() 
     if translator.is_available()
 }
 
-print(f"\n✓ {len(available_translators)}/{len(translators)} araç kullanılabilir")
-print(f"Kullanılabilir araçlar: {', '.join(available_translators.keys())}\n")
+print(f"\n[OK] {len(available_translators)}/{len(translators)} arac kullanilabilir")
+print(f"Kullanilabilir araclar: {', '.join(available_translators.keys())}\n")
 
 # Dataset loader
 dataset_loader = DatasetLoader(data_dir="data/processed")
@@ -67,8 +67,11 @@ dataset_loader = DatasetLoader(data_dir="data/processed")
 # Cache sistemi
 cache = Cache(cache_dir="cache", ttl_seconds=3600)
 
-# Aktif batch işleri
+# Aktif batch isleri
 batch_jobs = {}
+
+# Karsilastir sayfasindan gelen sonuclari sakla
+compare_results = []
 
 @app.route('/')
 def index():
@@ -101,7 +104,7 @@ def test():
 
 @app.route('/api/translators/status', methods=['GET'])
 def get_translators_status():
-    """Çeviri araçlarının durumunu döndür"""
+    """Ceviri araclarinin durumunu dondur"""
     status = {}
     
     for name, translator in translators.items():
@@ -115,14 +118,14 @@ def get_translators_status():
 @app.route('/api/translate', methods=['POST'])
 def translate():
     """
-    Tekil metin çevirisi
+    Tekil metin cevirisi
     
     Body: {
         "text": "string",
         "source_lang": "en",
         "target_lang": "tr",
         "translators": ["google", "deepl", "microsoft", "amazon"],
-        "reference": "string" (opsiyonel, metrik hesaplama için)
+        "reference": "string" (opsiyonel, metrik hesaplama icin)
     }
     """
     data = request.get_json()
@@ -132,6 +135,7 @@ def translate():
     target_lang = data.get('target_lang', 'tr')
     requested_translators = data.get('translators', list(available_translators.keys()))
     reference = data.get('reference')
+    category = data.get('category', 'technical')
     
     print(f"\n[API] Ceviri istegi:")
     print(f"  Metin: {text}")
@@ -140,9 +144,9 @@ def translate():
     print(f"  Kullanilabilir ceviriciler: {list(available_translators.keys())}")
     
     if not text:
-        return jsonify({'error': 'Metin boş olamaz'}), 400
+        return jsonify({'error': 'Metin bos olamaz'}), 400
     
-    # Çevirileri yap
+    # Cevirileri yap
     translations = {}
     metrics = {}
     time_taken = {}
@@ -153,14 +157,14 @@ def translate():
         
         translator = available_translators[translator_name]
         
-        # Cache kontrolü
+        # Cache kontrolu
         cached = cache.get(text, translator_name, source_lang, target_lang)
         if cached:
             translations[translator_name] = cached
             time_taken[translator_name] = 0
             continue
         
-        # Çeviri yap
+        # Ceviri yap
         start_time = time.time()
         try:
             translation = translator.translate(text, source_lang, target_lang)
@@ -171,20 +175,36 @@ def translate():
             if translation:
                 translations[translator_name] = translation
                 time_taken[translator_name] = round(elapsed, 2)
+                
+                # Cache'e kaydet
+                cache.set(text, translation, translator_name, source_lang, target_lang)
+                
+                # Metrik hesapla (referans varsa)
+                if reference:
+                    metrics[translator_name] = {
+                        'bleu': calculate_bleu(translation, reference),
+                        'meteor': calculate_meteor(translation, reference),
+                        'ter': calculate_ter(translation, reference),
+                        'chrf': calculate_chrf(translation, reference)
+                    }
         except Exception as e:
             print(f"  [{translator_name}] Hata: {e}")
-            
-            # Cache'e kaydet
-            cache.set(text, translation, translator_name, source_lang, target_lang)
-            
-            # Metrik hesapla (referans varsa)
-            if reference:
-                metrics[translator_name] = {
-                    'bleu': calculate_bleu(translation, reference),
-                    'meteor': calculate_meteor(translation, reference),
-                    'ter': calculate_ter(translation, reference),
-                    'chrf': calculate_chrf(translation, reference)
-                }
+    
+    # Sonuclari kaydet (Analytics icin)
+    if metrics:
+        result_entry = {
+            'source_text': text,
+            'reference': reference,
+            'category': category,
+            'translations': translations,
+            'metrics': metrics,
+            'timestamp': time.time()
+        }
+        compare_results.append(result_entry)
+        
+        # Son 100 sonucu tut (memory icin)
+        if len(compare_results) > 100:
+            compare_results.pop(0)
     
     return jsonify({
         'translations': translations,
@@ -198,7 +218,7 @@ def translate():
 @app.route('/api/batch-translate', methods=['POST'])
 def batch_translate():
     """
-    Toplu çeviri işlemi başlat
+    Toplu ceviri islemi baslat
     
     Body: {
         "dataset_id": "test_set",
@@ -212,13 +232,13 @@ def batch_translate():
     requested_translators = data.get('translators', list(available_translators.keys()))
     sample_size = data.get('sample_size', 1000)
     
-    # Dataset yükle
+    # Dataset yukle
     dataset = dataset_loader.get_dataset(dataset_id)
     
     if not dataset:
-        return jsonify({'error': f'Dataset bulunamadı: {dataset_id}'}), 404
+        return jsonify({'error': f'Dataset bulunamadi: {dataset_id}'}), 404
     
-    # Örnek al
+    # Ornek al
     import random
     sample = random.sample(dataset, min(sample_size, len(dataset)))
     
@@ -236,7 +256,7 @@ def batch_translate():
         'results': []
     }
     
-    # Arka planda işle (basit implementasyon - production'da Celery kullanılabilir)
+    # Arka planda isle (basit implementasyon - production'da Celery kullanilabilir)
     import threading
     thread = threading.Thread(target=process_batch_job, args=(job_id, sample, requested_translators))
     thread.start()
@@ -250,12 +270,12 @@ def batch_translate():
 
 def process_batch_job(job_id: str, segments: list, translator_names: list):
     """
-    Batch job'ı işle (arka plan)
+    Batch job'i isle (arka plan)
     
     Args:
         job_id: Job ID
         segments: Segment listesi
-        translator_names: Çeviri araçları
+        translator_names: Ceviri araclari
     """
     job = batch_jobs[job_id]
     results = []
@@ -273,14 +293,14 @@ def process_batch_job(job_id: str, segments: list, translator_names: list):
             'metrics': {}
         }
         
-        # Her araçla çevir
+        # Her aracla cevir
         for translator_name in translator_names:
             if translator_name not in available_translators:
                 continue
             
             translator = available_translators[translator_name]
             
-            # Çeviri
+            # Ceviri
             translation = translator.translate(source_text, 'en', 'tr')
             
             if translation:
@@ -296,16 +316,16 @@ def process_batch_job(job_id: str, segments: list, translator_names: list):
         
         results.append(segment_result)
         
-        # İlerleme güncelle
+        # Ilerleme guncelle
         job['progress'] = ((idx + 1) / len(segments)) * 100
     
-    # Job'ı tamamla
+    # Job'i tamamla
     job['status'] = 'completed'
     job['progress'] = 100
     job['results'] = results
     job['completed_at'] = time.time()
     
-    # Sonuçları dosyaya kaydet
+    # Sonuclari dosyaya kaydet
     output_dir = Path('data/results')
     output_dir.mkdir(parents=True, exist_ok=True)
     save_results(results, output_dir / f"{job_id}.json")
@@ -314,7 +334,7 @@ def process_batch_job(job_id: str, segments: list, translator_names: list):
 def get_batch_status(job_id):
     """Batch job durumunu sorgula"""
     if job_id not in batch_jobs:
-        return jsonify({'error': 'Job bulunamadı'}), 404
+        return jsonify({'error': 'Job bulunamadi'}), 404
     
     job = batch_jobs[job_id]
     
@@ -349,7 +369,7 @@ def get_datasets():
 @app.route('/api/evaluate', methods=['POST'])
 def evaluate():
     """
-    Çeviri değerlendirme
+    Ceviri degerlendirme
     
     Body: {
         "translation": "string",
@@ -362,7 +382,7 @@ def evaluate():
     reference = data.get('reference', '').strip()
     
     if not translation or not reference:
-        return jsonify({'error': 'Çeviri ve referans gerekli'}), 400
+        return jsonify({'error': 'Ceviri ve referans gerekli'}), 400
     
     metrics = {
         'bleu': calculate_bleu(translation, reference),
@@ -375,14 +395,14 @@ def evaluate():
 
 @app.route('/api/results/<job_id>', methods=['GET'])
 def get_results(job_id):
-    """Batch job sonuçlarını al"""
+    """Batch job sonuclarini al"""
     if job_id not in batch_jobs:
-        return jsonify({'error': 'Job bulunamadı'}), 404
+        return jsonify({'error': 'Job bulunamadi'}), 404
     
     job = batch_jobs[job_id]
     
     if job['status'] != 'completed':
-        return jsonify({'error': 'Job henüz tamamlanmadı'}), 400
+        return jsonify({'error': 'Job henuz tamamlanmadi'}), 400
     
     return jsonify({
         'job_id': job_id,
@@ -392,38 +412,24 @@ def get_results(job_id):
 
 @app.route('/api/results/summary', methods=['GET'])
 def get_summary():
-    """Tüm sonuçların özetini al"""
-    # Tüm tamamlanmış job'ların sonuçlarını birleştir
+    """Tum sonuclarin ozetini al"""
+    # Tum tamamlanmis job'larin sonuclarini birlestir
     all_results = []
     
     for job in batch_jobs.values():
         if job['status'] == 'completed':
             all_results.extend(job['results'])
     
-    # Eğer hiç sonuç yoksa, demo veri döndür
+    # Compare sayfasindan gelen sonuclari da ekle
+    all_results.extend(compare_results)
+    
+    # Eger hic sonuc yoksa, bos mesaj dondur
     if not all_results:
-        # Demo veri - gerçek API'lerden alınan örnek sonuçlar
-        demo_summary = {
-            'average_scores': {
-                'deepl': {
-                    'bleu': 0.7850,
-                    'meteor': 0.8120,
-                    'ter': 0.2340,
-                    'chrf': 0.8560
-                },
-                'microsoft': {
-                    'bleu': 0.7620,
-                    'meteor': 0.7890,
-                    'ter': 0.2580,
-                    'chrf': 0.8320
-                }
-            },
-            'total_translations': 150,
-            'best_tool': 'DeepL',
-            'best_score': 0.7850,
-            'best_bleu_score': 0.7850
-        }
-        return jsonify(demo_summary)
+        return jsonify({
+            'message': 'Henuz test sonucu yok. Karsilastir sayfasindan ceviri yapin.',
+            'average_scores': {},
+            'total_translations': 0
+        })
     
     summary = calculate_summary(all_results)
     
@@ -431,18 +437,18 @@ def get_summary():
 
 def calculate_summary(results: list) -> dict:
     """
-    Sonuçların özetini hesapla
+    Sonuclarin ozetini hesapla
     
     Args:
-        results: Sonuç listesi
+        results: Sonuc listesi
     
     Returns:
-        Özet istatistikler
+        Ozet istatistikler
     """
     if not results:
         return {}
     
-    # Araç bazlı skorları topla
+    # Arac bazli skorlari topla
     tool_scores = {}
     
     for result in results:
@@ -454,7 +460,7 @@ def calculate_summary(results: list) -> dict:
                 if score is not None:
                     tool_scores[tool][metric].append(score)
     
-    # Ortalama skorları hesapla
+    # Ortalama skorlari hesapla
     average_scores = {}
     
     for tool, metrics in tool_scores.items():
@@ -463,7 +469,7 @@ def calculate_summary(results: list) -> dict:
             if scores:
                 average_scores[tool][metric] = round(sum(scores) / len(scores), 4)
     
-    # En iyi aracı bul (BLEU'ya göre)
+    # En iyi araci bul (BLEU'ya gore)
     best_tool = None
     best_bleu = 0
     
@@ -472,7 +478,7 @@ def calculate_summary(results: list) -> dict:
             best_bleu = scores['bleu']
             best_tool = tool
     
-    # Kategori bazlı analiz
+    # Kategori bazli analiz
     category_breakdown = {}
     categories = set(r.get('category', 'unknown') for r in results)
     
@@ -505,29 +511,29 @@ def clear_cache():
 
 @app.errorhandler(404)
 def not_found(error):
-    """404 hatası"""
-    return jsonify({'error': 'Endpoint bulunamadı'}), 404
+    """404 hatasi"""
+    return jsonify({'error': 'Endpoint bulunamadi'}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    """500 hatası"""
-    return jsonify({'error': 'Sunucu hatası'}), 500
+    """500 hatasi"""
+    return jsonify({'error': 'Sunucu hatasi'}), 500
 
 if __name__ == '__main__':
     print("\n" + "="*60)
-    print("Flask Backend Başlatılıyor")
+    print("Flask Backend Baslatiliyor")
     print("="*60)
     print(f"URL: http://localhost:5000")
-    print(f"Kullanılabilir araçlar: {len(available_translators)}")
+    print(f"Kullanilabilir araclar: {len(available_translators)}")
     print("="*60 + "\n")
     
-    # Dataset'leri yükle
+    # Dataset'leri yukle
     try:
         dataset_loader.load_all_datasets()
     except Exception as e:
-        print(f"⚠ Dataset yükleme hatası: {e}")
+        print(f"[!] Dataset yukleme hatasi: {e}")
     
-    # Uygulamayı başlat (reloader kapalı - .env problemi çözmek için)
+    # Uygulamayi baslat (reloader kapali - .env problemi cozmek icin)
     app.run(
         host='0.0.0.0',
         port=5000,

@@ -9,7 +9,7 @@ try:
     DEEPL_AVAILABLE = True
 except ImportError:
     DEEPL_AVAILABLE = False
-    print("⚠ deepl kurulu değil")
+    print("[!] deepl kurulu degil")
 
 class DeepLTranslator(BaseTranslator):
     """DeepL API wrapper sınıfı"""
@@ -18,20 +18,20 @@ class DeepLTranslator(BaseTranslator):
         super().__init__("DeepL")
         
         if not DEEPL_AVAILABLE:
-            print(f"✗ {self.name} kullanılamıyor: Kütüphane kurulu değil")
+            print(f"[X] {self.name} kullanilamiyor: Kutuphane kurulu degil")
             return
         
         try:
             api_key = os.getenv('DEEPL_API_KEY')
             
             if not api_key:
-                print(f"⚠ {self.name}: DEEPL_API_KEY ayarlanmamış")
+                print(f"[!] {self.name}: DEEPL_API_KEY ayarlanmamis")
                 return
             
             # Translator oluştur
             self.translator = deepl.Translator(api_key)
             self._is_available = True
-            print(f"✓ {self.name} hazır")
+            print(f"[OK] {self.name} hazir")
             
             # Kullanım bilgisi
             try:
@@ -43,7 +43,7 @@ class DeepLTranslator(BaseTranslator):
                 pass
             
         except Exception as e:
-            print(f"✗ {self.name} başlatma hatası: {e}")
+            print(f"[X] {self.name} baslatma hatasi: {e}")
             self._is_available = False
     
     def translate(self, text: str, source_lang: str = 'en', target_lang: str = 'tr') -> Optional[str]:
@@ -75,7 +75,7 @@ class DeepLTranslator(BaseTranslator):
             return result.text
             
         except Exception as e:
-            print(f"✗ {self.name} çeviri hatası: {e}")
+            print(f"[X] {self.name} ceviri hatasi: {e}")
             return None
     
     def batch_translate(self, texts: List[str], source_lang: str = 'en', 
@@ -112,7 +112,7 @@ class DeepLTranslator(BaseTranslator):
                 return [results.text]
             
         except Exception as e:
-            print(f"✗ {self.name} toplu çeviri hatası: {e}")
+            print(f"[X] {self.name} toplu ceviri hatasi: {e}")
             return [None] * len(texts)
     
     def estimate_cost(self, char_count: int) -> float:
@@ -149,7 +149,7 @@ class DeepLTranslator(BaseTranslator):
                 'remaining': usage.character.limit - usage.character.count if usage.character.limit else None
             }
         except Exception as e:
-            print(f"✗ {self.name} kullanım kontrolü hatası: {e}")
+            print(f"[X] {self.name} kullanim kontrolu hatasi: {e}")
             return {}
     
     def get_supported_languages(self) -> List[str]:
@@ -167,5 +167,5 @@ class DeepLTranslator(BaseTranslator):
             target_langs = self.translator.get_target_languages()
             return [lang.code.lower() for lang in target_langs]
         except Exception as e:
-            print(f"✗ {self.name} dil listesi hatası: {e}")
+            print(f"[X] {self.name} dil listesi hatasi: {e}")
             return []

@@ -10,7 +10,7 @@ try:
     BOTO3_AVAILABLE = True
 except ImportError:
     BOTO3_AVAILABLE = False
-    print("⚠ boto3 kurulu değil")
+    print("[!] boto3 kurulu degil")
 
 class AmazonTranslator(BaseTranslator):
     """Amazon Translate API wrapper sınıfı"""
@@ -19,7 +19,7 @@ class AmazonTranslator(BaseTranslator):
         super().__init__("Amazon Translate")
         
         if not BOTO3_AVAILABLE:
-            print(f"✗ {self.name} kullanılamıyor: Kütüphane kurulu değil")
+            print(f"[X] {self.name} kullanilamiyor: Kutuphane kurulu degil")
             return
         
         try:
@@ -29,7 +29,7 @@ class AmazonTranslator(BaseTranslator):
             region = os.getenv('AWS_REGION', 'us-east-1')
             
             if not access_key or not secret_key:
-                print(f"⚠ {self.name}: AWS credentials ayarlanmamış")
+                print(f"[!] {self.name}: AWS credentials ayarlanmamis")
                 return
             
             # Client oluştur
@@ -44,10 +44,10 @@ class AmazonTranslator(BaseTranslator):
             self._test_connection()
             
         except NoCredentialsError:
-            print(f"✗ {self.name}: AWS credentials bulunamadı")
+            print(f"[X] {self.name}: AWS credentials bulunamadi")
             self._is_available = False
         except Exception as e:
-            print(f"✗ {self.name} başlatma hatası: {e}")
+            print(f"[X] {self.name} baslatma hatasi: {e}")
             self._is_available = False
     
     def _test_connection(self):
@@ -61,10 +61,10 @@ class AmazonTranslator(BaseTranslator):
             
             if result and 'TranslatedText' in result:
                 self._is_available = True
-                print(f"✓ {self.name} hazır")
+                print(f"[OK] {self.name} hazir")
             
         except Exception as e:
-            print(f"✗ {self.name} test hatası: {e}")
+            print(f"[X] {self.name} test hatasi: {e}")
     
     def translate(self, text: str, source_lang: str = 'en', target_lang: str = 'tr') -> Optional[str]:
         """
@@ -91,10 +91,10 @@ class AmazonTranslator(BaseTranslator):
             return result['TranslatedText']
             
         except ClientError as e:
-            print(f"✗ {self.name} API hatası: {e}")
+            print(f"[X] {self.name} API hatasi: {e}")
             return None
         except Exception as e:
-            print(f"✗ {self.name} çeviri hatası: {e}")
+            print(f"[X] {self.name} ceviri hatasi: {e}")
             return None
     
     def batch_translate(self, texts: List[str], source_lang: str = 'en', 
@@ -152,5 +152,5 @@ class AmazonTranslator(BaseTranslator):
             response = self.client.list_languages()
             return [lang['LanguageCode'] for lang in response['Languages']]
         except Exception as e:
-            print(f"✗ {self.name} dil listesi hatası: {e}")
+            print(f"[X] {self.name} dil listesi hatasi: {e}")
             return []

@@ -19,18 +19,18 @@ class MicrosoftTranslator(BaseTranslator):
                                      'https://api.cognitive.microsofttranslator.com')
             
             if not self.key:
-                print(f"⚠ {self.name}: AZURE_TRANSLATOR_KEY ayarlanmamış")
+                print(f"[!] {self.name}: AZURE_TRANSLATOR_KEY ayarlanmamis")
                 return
             
             # Test isteği
             self._test_connection()
             
         except Exception as e:
-            print(f"✗ {self.name} başlatma hatası: {e}")
+            print(f"[X] {self.name} baslatma hatasi: {e}")
             self._is_available = False
     
     def _test_connection(self):
-        """API bağlantısını test et"""
+        """API baglantisını test et"""
         try:
             path = '/translate'
             constructed_url = self.endpoint + path
@@ -55,16 +55,16 @@ class MicrosoftTranslator(BaseTranslator):
             
             if response.status_code == 200:
                 self._is_available = True
-                print(f"✓ {self.name} hazır")
+                print(f"[OK] {self.name} hazir")
             else:
-                print(f"✗ {self.name} bağlantı hatası: {response.status_code}")
+                print(f"[X] {self.name} baglanti hatasi: {response.status_code}")
                 
         except Exception as e:
-            print(f"✗ {self.name} test hatası: {e}")
+            print(f"[X] {self.name} test hatasi: {e}")
     
     def translate(self, text: str, source_lang: str = 'en', target_lang: str = 'tr') -> Optional[str]:
         """
-        Tekil metin çevirisi
+        Tekil metin cevirisi
         
         Args:
             text: Çevrilecek metin
@@ -103,17 +103,17 @@ class MicrosoftTranslator(BaseTranslator):
                 result = response.json()
                 return result[0]['translations'][0]['text']
             else:
-                print(f"✗ {self.name} API hatası: {response.status_code}")
+                print(f"[X] {self.name} API hatasi: {response.status_code}")
                 return None
             
         except Exception as e:
-            print(f"✗ {self.name} çeviri hatası: {e}")
+            print(f"[X] {self.name} ceviri hatasi: {e}")
             return None
     
     def batch_translate(self, texts: List[str], source_lang: str = 'en', 
                        target_lang: str = 'tr') -> List[Optional[str]]:
         """
-        Toplu metin çevirisi
+        Toplu metin cevirisi
         
         Args:
             texts: Çevrilecek metinler listesi
@@ -153,11 +153,11 @@ class MicrosoftTranslator(BaseTranslator):
                 results = response.json()
                 return [r['translations'][0]['text'] for r in results]
             else:
-                print(f"✗ {self.name} API hatası: {response.status_code}")
+                print(f"[X] {self.name} API hatasi: {response.status_code}")
                 return [None] * len(texts)
             
         except Exception as e:
-            print(f"✗ {self.name} toplu çeviri hatası: {e}")
+            print(f"[X] {self.name} toplu ceviri hatasi: {e}")
             return [None] * len(texts)
     
     def estimate_cost(self, char_count: int) -> float:

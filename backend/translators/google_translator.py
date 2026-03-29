@@ -9,7 +9,7 @@ try:
     GOOGLE_AVAILABLE = True
 except ImportError:
     GOOGLE_AVAILABLE = False
-    print("⚠ google-cloud-translate kurulu değil")
+    print("[!] google-cloud-translate kurulu degil")
 
 class GoogleTranslator(BaseTranslator):
     """Google Cloud Translation API wrapper sınıfı"""
@@ -18,27 +18,27 @@ class GoogleTranslator(BaseTranslator):
         super().__init__("Google Translate")
         
         if not GOOGLE_AVAILABLE:
-            print(f"✗ {self.name} kullanılamıyor: Kütüphane kurulu değil")
+            print(f"[X] {self.name} kullanilamiyor: Kutuphane kurulu degil")
             return
         
         try:
             # Credentials kontrolü
             credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
             if not credentials_path:
-                print(f"⚠ {self.name}: GOOGLE_APPLICATION_CREDENTIALS ayarlanmamış")
+                print(f"[!] {self.name}: GOOGLE_APPLICATION_CREDENTIALS ayarlanmamis")
                 return
             
             if not os.path.exists(credentials_path):
-                print(f"⚠ {self.name}: Credentials dosyası bulunamadı: {credentials_path}")
+                print(f"[!] {self.name}: Credentials dosyasi bulunamadi: {credentials_path}")
                 return
             
             # Client oluştur
             self.client = translate.Client()
             self._is_available = True
-            print(f"✓ {self.name} hazır")
+            print(f"[OK] {self.name} hazir")
             
         except Exception as e:
-            print(f"✗ {self.name} başlatma hatası: {e}")
+            print(f"[X] {self.name} baslatma hatasi: {e}")
             self._is_available = False
     
     def translate(self, text: str, source_lang: str = 'en', target_lang: str = 'tr') -> Optional[str]:
@@ -67,7 +67,7 @@ class GoogleTranslator(BaseTranslator):
             return result['translatedText']
             
         except Exception as e:
-            print(f"✗ {self.name} çeviri hatası: {e}")
+            print(f"[X] {self.name} ceviri hatasi: {e}")
             return None
     
     def batch_translate(self, texts: List[str], source_lang: str = 'en', 
@@ -101,7 +101,7 @@ class GoogleTranslator(BaseTranslator):
                 return [results['translatedText']]
             
         except Exception as e:
-            print(f"✗ {self.name} toplu çeviri hatası: {e}")
+            print(f"[X] {self.name} toplu ceviri hatasi: {e}")
             return [None] * len(texts)
     
     def estimate_cost(self, char_count: int) -> float:
@@ -133,5 +133,5 @@ class GoogleTranslator(BaseTranslator):
             results = self.client.get_languages()
             return [lang['language'] for lang in results]
         except Exception as e:
-            print(f"✗ {self.name} dil listesi hatası: {e}")
+            print(f"[X] {self.name} dil listesi hatasi: {e}")
             return []
