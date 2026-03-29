@@ -2,6 +2,51 @@ import { useState, useEffect } from 'react'
 import { translateText } from '../services/api'
 import TranslationCard from '../components/TranslationCard'
 
+const METRIC_WEIGHTS = {
+  bleu: 0.35,
+  meteor: 0.25,
+  chrf: 0.25,
+  ter: 0.15
+}
+
+const computeCompositeScore = (metrics = {}) => {
+  const bleu = Number(metrics.bleu ?? 0)
+  const meteor = Number(metrics.meteor ?? 0)
+  const chrf = Number(metrics.chrf ?? 0)
+  const terAccuracy = 1 - Number(metrics.ter ?? 1)
+
+  return (
+    (bleu * METRIC_WEIGHTS.bleu) +
+    (meteor * METRIC_WEIGHTS.meteor) +
+    (chrf * METRIC_WEIGHTS.chrf) +
+    (terAccuracy * METRIC_WEIGHTS.ter)
+  )
+}
+
+const getScoreBand = (score) => {
+  if (score >= 0.9) return 'mukemmel'
+  if (score >= 0.75) return 'cok-iyi'
+  if (score >= 0.6) return 'iyi'
+  if (score >= 0.45) return 'orta'
+  return 'dusuk'
+}
+
+const getAnalysisByBand = (band) => {
+  if (band === 'mukemmel') {
+    return 'Kalite çok yüksek. Kritik metinlerde bile küçük stil düzenlemeleri dışında ek müdahale gerektirmez.'
+  }
+  if (band === 'cok-iyi') {
+    return 'Kalite güçlü. Yayına almadan önce terminoloji ve ton uyumu için hızlı bir son kontrol yeterli olur.'
+  }
+  if (band === 'iyi') {
+    return 'Kalite iyi seviyede. Teknik terimler, bağlam ve noktalama için manuel inceleme önerilir.'
+  }
+  if (band === 'orta') {
+    return 'Kalite orta seviyede. Anlam kayması veya eksik çeviri riski için cümle bazlı doğrulama yapılmalıdır.'
+  }
+  return 'Kalite düşük seviyede. Bu çıktı sadece taslak kabul edilmeli, yayın öncesi kapsamlı insan düzeltmesi yapılmalıdır.'
+}
+
 function Compare() {
   // localStorage'dan onceki sonuclari yukle
   const [text, setText] = useState(() => {
@@ -308,23 +353,18 @@ function Compare() {
           
           {/* En İyi Seçim Önerisi - ÜST KISIMDA */}
           {results && results.metrics && Object.keys(results.metrics).length > 0 && (() => {
-            // En iyi aracı bul
-            let bestTool = null
-            let bestScore = -1
-            
-            Object.entries(results.metrics).forEach(([tool, metrics]) => {
-              const avgScore = (
-                (metrics.bleu || 0) + 
-                (metrics.meteor || 0) + 
-                (metrics.chrf || 0) + 
-                (1 - (metrics.ter || 0))
-              ) / 4
-              
-              if (avgScore > bestScore) {
-                bestScore = avgScore
-                bestTool = tool
-              }
-            })
+            const rankedTools = Object.entries(results.metrics)
+              .map(([tool, metrics]) => ({
+                tool,
+                metrics,
+                score: computeCompositeScore(metrics)
+              }))
+              .sort((a, b) => b.score - a.score)
+
+            const best = rankedTools[0]
+            const second = rankedTools[1] || null
+            const bestTool = best?.tool
+            const bestScore = best?.score ?? 0
             
             const toolNames = {
               google: 'Google Translate',
@@ -334,6 +374,10 @@ function Compare() {
             }
             
             const accuracy = (bestScore * 100).toFixed(1)
+            const margin = second ? ((best.score - second.score) * 100).toFixed(1) : null
+            const band = getScoreBand(bestScore)
+            const analysisText = getAnalysisByBand(band)
+            const isEstimated = best?.metrics?.metric_mode === 'estimated_no_reference'
             
             return (
               <div className="card mb-6 bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300">
@@ -359,13 +403,33 @@ function Compare() {
                   </div>
                   
                   <div className="border-t pt-4">
-                    <p className="text-gray-700">
-                      <strong>💡 Öneri:</strong> Bu metin türü için <strong className="text-amber-900">{toolNames[bestTool]}</strong> kullanmanızı öneriyoruz. 
-                      {bestScore > 0.9 && " Çeviri kalitesi mükemmel seviyede."}
-                      {bestScore > 0.7 && bestScore <= 0.9 && " Çeviri kalitesi çok iyi seviyede."}
-                      {bestScore > 0.5 && bestScore <= 0.7 && " Çeviri kalitesi iyi seviyede."}
-                      {bestScore <= 0.5 && " Çeviri kalitesi orta seviyede, manuel kontrol önerilir."}
+                    <p className="text-gray-700 mb-2">
+                      <strong>💡 Öneri:</strong> Bu metin türü için <strong className="text-amber-900">{toolNames[bestTool]}</strong> öncelikli seçenek olarak öne çıkıyor.
                     </p>
+                    <p className="text-sm text-gray-700 mb-2">
+                      Ağırlıklı kalite skoru: <strong>{accuracy}%</strong>. {analysisText}
+                    </p>
+                    {isEstimated && (
+                      <p className="text-xs text-amber-800 mb-2">
+                        Bu sonuç referans metin olmadığı için tahmini (no-reference) kalite metrikleriyle hesaplandı.
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-700 mb-2">
+                      Metrik kırılımı: BLEU <strong>{((best.metrics?.bleu || 0) * 100).toFixed(1)}%</strong>,
+                      METEOR <strong>{((best.metrics?.meteor || 0) * 100).toFixed(1)}%</strong>,
+                      chrF++ <strong>{((best.metrics?.chrf || 0) * 100).toFixed(1)}%</strong>,
+                      TER doğruluğu <strong>{((1 - (best.metrics?.ter || 0)) * 100).toFixed(1)}%</strong>.
+                    </p>
+                    {best.metrics?.round_trip_consistency !== undefined && best.metrics?.round_trip_consistency !== null && (
+                      <p className="text-sm text-gray-700 mb-2">
+                        Round-trip tutarlılığı: <strong>{(best.metrics.round_trip_consistency * 100).toFixed(1)}%</strong>
+                      </p>
+                    )}
+                    {margin !== null && (
+                      <p className="text-sm text-gray-700">
+                        İkinci sıradaki <strong>{toolNames[second.tool]}</strong> ile fark: <strong>{margin}%</strong>.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -376,19 +440,8 @@ function Compare() {
           {results && results.metrics && Object.keys(results.metrics).length > 0 && (() => {
             // Araçları doğruluk oranına göre sırala
             const sortedTools = [...selectedTools].sort((a, b) => {
-              const scoreA = results.metrics[a] ? (
-                (results.metrics[a].bleu || 0) + 
-                (results.metrics[a].meteor || 0) + 
-                (results.metrics[a].chrf || 0) + 
-                (1 - (results.metrics[a].ter || 0))
-              ) / 4 : -1
-              
-              const scoreB = results.metrics[b] ? (
-                (results.metrics[b].bleu || 0) + 
-                (results.metrics[b].meteor || 0) + 
-                (results.metrics[b].chrf || 0) + 
-                (1 - (results.metrics[b].ter || 0))
-              ) / 4 : -1
+              const scoreA = results.metrics[a] ? computeCompositeScore(results.metrics[a]) : -1
+              const scoreB = results.metrics[b] ? computeCompositeScore(results.metrics[b]) : -1
               
               return scoreB - scoreA
             })
@@ -412,12 +465,7 @@ function Compare() {
                     if (!metrics) return null
                     
                     // Ortalama doğruluk hesapla
-                    const avgScore = (
-                      (metrics.bleu || 0) + 
-                      (metrics.meteor || 0) + 
-                      (metrics.chrf || 0) + 
-                      (1 - (metrics.ter || 0))
-                    ) / 4
+                    const avgScore = computeCompositeScore(metrics)
                     const accuracy = (avgScore * 100).toFixed(1)
                     
                     return (
@@ -452,19 +500,8 @@ function Compare() {
             // Araçları doğruluk oranına göre sırala
             const sortedTools = results.metrics && Object.keys(results.metrics).length > 0
               ? [...selectedTools].sort((a, b) => {
-                  const scoreA = results.metrics[a] ? (
-                    (results.metrics[a].bleu || 0) + 
-                    (results.metrics[a].meteor || 0) + 
-                    (results.metrics[a].chrf || 0) + 
-                    (1 - (results.metrics[a].ter || 0))
-                  ) / 4 : -1
-                  
-                  const scoreB = results.metrics[b] ? (
-                    (results.metrics[b].bleu || 0) + 
-                    (results.metrics[b].meteor || 0) + 
-                    (results.metrics[b].chrf || 0) + 
-                    (1 - (results.metrics[b].ter || 0))
-                  ) / 4 : -1
+                  const scoreA = results.metrics[a] ? computeCompositeScore(results.metrics[a]) : -1
+                  const scoreB = results.metrics[b] ? computeCompositeScore(results.metrics[b]) : -1
                   
                   return scoreB - scoreA
                 })

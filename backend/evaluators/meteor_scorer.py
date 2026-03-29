@@ -1,5 +1,6 @@
 """METEOR metriği hesaplama (NLTK kullanarak)"""
 
+from collections import Counter
 from typing import Optional
 
 try:
@@ -19,6 +20,34 @@ except ImportError:
     NLTK_AVAILABLE = False
     print("⚠ nltk kurulu değil")
 
+
+def _normalize_text(text: str) -> str:
+    """Karşılaştırma öncesi metni normalize et."""
+    return " ".join((text or "").strip().split())
+
+
+def _simple_token_f1(hypothesis: str, reference: str) -> float:
+    """NLTK yoksa veya kısa metinlerde kullanılacak token-F1 benzerlik skoru (0-1)."""
+    hyp_tokens = _normalize_text(hypothesis).casefold().split()
+    ref_tokens = _normalize_text(reference).casefold().split()
+
+    if not hyp_tokens and not ref_tokens:
+        return 1.0
+    if not hyp_tokens or not ref_tokens:
+        return 0.0
+
+    hyp_counter = Counter(hyp_tokens)
+    ref_counter = Counter(ref_tokens)
+    overlap = sum((hyp_counter & ref_counter).values())
+
+    precision = overlap / len(hyp_tokens)
+    recall = overlap / len(ref_tokens)
+
+    if precision + recall == 0:
+        return 0.0
+
+    return (2 * precision * recall) / (precision + recall)
+
 def calculate_meteor(hypothesis: str, reference: str) -> Optional[float]:
     """
     METEOR skoru hesapla
@@ -33,8 +62,23 @@ def calculate_meteor(hypothesis: str, reference: str) -> Optional[float]:
     Returns:
         METEOR skoru (0-1 arası) veya None
     """
+    hypothesis = _normalize_text(hypothesis)
+    reference = _normalize_text(reference)
+
+    if not hypothesis and not reference:
+        return 1.0
+    if not hypothesis or not reference:
+        return 0.0
+
+    if hypothesis.casefold() == reference.casefold():
+        return 1.0
+
+    # Kisa UI metinlerinde token-F1 daha kararlı ve sezgiseldir.
+    if len(hypothesis.split()) <= 2 and len(reference.split()) <= 2:
+        return _simple_token_f1(hypothesis, reference)
+
     if not NLTK_AVAILABLE:
-        return None
+        return _simple_token_f1(hypothesis, reference)
     
     try:
         # METEOR tokenization gerektirir
@@ -48,7 +92,7 @@ def calculate_meteor(hypothesis: str, reference: str) -> Optional[float]:
         
     except Exception as e:
         print(f"✗ METEOR hesaplama hatası: {e}")
-        return None
+        return _simple_token_f1(hypothesis, reference)
 
 def batch_calculate_meteor(hypotheses: list, references: list) -> list:
     """
@@ -61,9 +105,6 @@ def batch_calculate_meteor(hypotheses: list, references: list) -> list:
     Returns:
         METEOR skorları listesi
     """
-    if not NLTK_AVAILABLE:
-        return [None] * len(hypotheses)
-    
     scores = []
     for hyp, ref in zip(hypotheses, references):
         score = calculate_meteor(hyp, ref)

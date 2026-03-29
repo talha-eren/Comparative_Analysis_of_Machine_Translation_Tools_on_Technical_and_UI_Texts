@@ -6,7 +6,8 @@ from .custom_metrics import (
     calculate_terminology_consistency,
     check_placeholder_preservation,
     calculate_length_ratio,
-    detect_untranslated_words
+    detect_untranslated_words,
+    evaluate_without_reference
 )
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     'calculate_terminology_consistency',
     'check_placeholder_preservation',
     'calculate_length_ratio',
-    'detect_untranslated_words'
+    'detect_untranslated_words',
+    'evaluate_without_reference'
 ]
