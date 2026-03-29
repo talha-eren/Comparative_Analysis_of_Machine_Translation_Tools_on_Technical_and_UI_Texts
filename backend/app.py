@@ -23,8 +23,7 @@ from evaluators import (
     calculate_bleu, 
     calculate_chrf, 
     calculate_ter, 
-    calculate_meteor,
-    evaluate_without_reference
+    calculate_meteor
 )
 from data_processing import DatasetLoader
 from utils import Cache, load_dataset, save_results, format_time
@@ -77,55 +76,6 @@ batch_jobs = {}
 
 # Karsilastir sayfasindan gelen sonuclari sakla
 compare_results = []
-
-# Referanssiz kalite tahmininde round-trip (geri ceviri) hesaplamasi.
-ENABLE_ROUND_TRIP_QE = os.getenv('ENABLE_ROUND_TRIP_QE', 'true').strip().lower() != 'false'
-
-
-def build_metrics(
-    source_text: str,
-    translation: str,
-    reference: str = None,
-    back_translation: str = None
-) -> dict:
-    """Referans varsa klasik, yoksa tahmini kalite metriklerini üret."""
-    if reference:
-        return {
-            'bleu': calculate_bleu(translation, reference),
-            'meteor': calculate_meteor(translation, reference),
-            'ter': calculate_ter(translation, reference),
-            'chrf': calculate_chrf(translation, reference),
-            'metric_mode': 'reference'
-        }
-
-    estimated = evaluate_without_reference(source_text, translation, back_translation=back_translation)
-    response = {
-        # Geriye dönük uyumluluk için mevcut metrik alanlarına map edilir.
-        'bleu': estimated['adequacy'],
-        'meteor': estimated['fluency'],
-        'ter': 1 - estimated['completeness'],
-        'chrf': estimated['format_preservation'],
-        'estimated_accuracy': estimated['estimated_accuracy'],
-        'base_estimated_accuracy': estimated['base_estimated_accuracy'],
-        'metric_mode': 'estimated_no_reference'
-    }
-
-    if estimated.get('round_trip_consistency') is not None:
-        response['round_trip_consistency'] = estimated['round_trip_consistency']
-
-    return response
-
-
-def get_back_translation(translator, translation: str, source_lang: str, target_lang: str) -> str:
-    """Round-trip consistency için hedef metni tekrar kaynak dile çevir."""
-    if not ENABLE_ROUND_TRIP_QE or not translation:
-        return None
-
-    try:
-        return translator.translate(translation, target_lang, source_lang)
-    except Exception as e:
-        print(f"  [RoundTrip] Geri ceviri hatasi: {e}")
-        return None
 
 @app.route('/')
 def index():
@@ -217,10 +167,6 @@ def translate():
         if cached:
             translations[translator_name] = cached
             time_taken[translator_name] = 0
-            back_translation = None
-            if not reference:
-                back_translation = get_back_translation(translator, cached, source_lang, target_lang)
-            metrics[translator_name] = build_metrics(text, cached, reference, back_translation)
             continue
         
         # Ceviri yap
@@ -238,16 +184,14 @@ def translate():
                 # Cache'e kaydet
                 cache.set(text, translation, translator_name, source_lang, target_lang)
                 
-                # Referans varsa standart, yoksa no-reference metrik hesapla.
-                back_translation = None
-                if not reference:
-                    back_translation = get_back_translation(
-                        translator,
-                        translation,
-                        source_lang,
-                        target_lang
-                    )
-                metrics[translator_name] = build_metrics(text, translation, reference, back_translation)
+                # Metrik hesapla (referans varsa)
+                if reference:
+                    metrics[translator_name] = {
+                        'bleu': calculate_bleu(translation, reference),
+                        'meteor': calculate_meteor(translation, reference),
+                        'ter': calculate_ter(translation, reference),
+                        'chrf': calculate_chrf(translation, reference)
+                    }
         except Exception as e:
             print(f"  [{translator_name}] Hata: {e}")
     
@@ -356,7 +300,7 @@ def process_batch_job(job_id: str, segments: list, translator_names: list):
     
     for idx, segment in enumerate(segments):
         source_text = segment['source_text']
-        reference = segment.get('target_text')
+        reference = segment['target_text']
         
         segment_result = {
             'segment_id': segment['id'],
@@ -381,15 +325,12 @@ def process_batch_job(job_id: str, segments: list, translator_names: list):
                 segment_result['translations'][translator_name] = translation
                 
                 # Metrikler
-                back_translation = None
-                if not reference:
-                    back_translation = get_back_translation(translator, translation, 'en', 'tr')
-                segment_result['metrics'][translator_name] = build_metrics(
-                    source_text,
-                    translation,
-                    reference,
-                    back_translation
-                )
+                segment_result['metrics'][translator_name] = {
+                    'bleu': calculate_bleu(translation, reference),
+                    'meteor': calculate_meteor(translation, reference),
+                    'ter': calculate_ter(translation, reference),
+                    'chrf': calculate_chrf(translation, reference)
+                }
         
         results.append(segment_result)
 
@@ -464,23 +405,23 @@ def evaluate():
     
     Body: {
         "translation": "string",
-        "reference": "string" (opsiyonel),
-        "source_text": "string" (referans yoksa gerekli)
+        "reference": "string"
     }
     """
     data = request.get_json()
     
     translation = data.get('translation', '').strip()
     reference = data.get('reference', '').strip()
-    source_text = data.get('source_text', '').strip()
     
-    if not translation:
-        return jsonify({'error': 'Ceviri gerekli'}), 400
-
-    if not reference and not source_text:
-        return jsonify({'error': 'Referans yoksa source_text gerekli'}), 400
-
-    metrics = build_metrics(source_text, translation, reference if reference else None)
+    if not translation or not reference:
+        return jsonify({'error': 'Ceviri ve referans gerekli'}), 400
+    
+    metrics = {
+        'bleu': calculate_bleu(translation, reference),
+        'meteor': calculate_meteor(translation, reference),
+        'ter': calculate_ter(translation, reference),
+        'chrf': calculate_chrf(translation, reference)
+    }
     
     return jsonify(metrics)
 
@@ -548,9 +489,7 @@ def calculate_summary(results: list) -> dict:
                 tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': []}
             
             for metric, score in metrics.items():
-                if metric not in tool_scores[tool]:
-                    continue
-                if score is not None and isinstance(score, (int, float)):
+                if score is not None:
                     tool_scores[tool][metric].append(score)
     
     # Ortalama skorlari hesapla

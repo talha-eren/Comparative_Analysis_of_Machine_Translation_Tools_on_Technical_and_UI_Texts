@@ -40,11 +40,10 @@ export const getDatasets = async () => {
   return response.data
 }
 
-export const evaluateTranslation = async (translation, reference = null, sourceText = null) => {
+export const evaluateTranslation = async (translation, reference) => {
   const response = await api.post('/api/evaluate', {
     translation,
-    reference,
-    source_text: sourceText
+    reference
   })
   return response.data
 }
