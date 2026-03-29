@@ -67,7 +67,7 @@ function Compare() {
     return saved || ''
   })
   const [loadingStage, setLoadingStage] = useState('')
-  
+
   // Sonuclari localStorage'a kaydet
   useEffect(() => {
     if (results) {
@@ -76,43 +76,43 @@ function Compare() {
       localStorage.setItem('compare_reference', reference)
     }
   }, [results, text, reference])
-  
+
   const tools = [
     { id: 'google', name: 'Google Translate' },
     { id: 'deepl', name: 'DeepL' },
     { id: 'microsoft', name: 'Microsoft Translator' },
     { id: 'amazon', name: 'Amazon Translate' }
   ]
-  
+
   const handleToolToggle = (toolId) => {
-    setSelectedTools(prev => 
+    setSelectedTools(prev =>
       prev.includes(toolId)
         ? prev.filter(t => t !== toolId)
         : [...prev, toolId]
     )
   }
-  
+
   const handleTranslate = async () => {
     if (!text.trim()) {
       alert('Lütfen çevrilecek metni girin')
       return
     }
-    
+
     if (selectedTools.length === 0) {
       alert('Lütfen en az bir çeviri aracı seçin')
       return
     }
-    
+
     setIsLoading(true)
     setResults(null)
     setLoadingStage('Çeviri araçları hazırlanıyor...')
-    
+
     try {
       // Simüle edilmiş aşamalar
       setTimeout(() => setLoadingStage('Metniniz analiz ediliyor...'), 500)
       setTimeout(() => setLoadingStage('Çeviriler yapılıyor...'), 1000)
       setTimeout(() => setLoadingStage('En iyi sonuç belirleniyor...'), 1500)
-      
+
       console.log('Çeviri isteği gönderiliyor:', {
         text,
         sourceLang,
@@ -120,7 +120,7 @@ function Compare() {
         selectedTools,
         reference
       })
-      
+
       const data = await translateText(
         text,
         sourceLang,
@@ -129,7 +129,7 @@ function Compare() {
         reference || null,
         category
       )
-      
+
       console.log('Çeviri yanıtı alındı:', data)
       console.log('Sonuçlar state\'e yazılıyor:', data)
       setResults(data)
@@ -142,7 +142,7 @@ function Compare() {
       setLoadingStage('')
     }
   }
-  
+
   const exampleTexts = [
     {
       id: 1,
@@ -206,19 +206,19 @@ function Compare() {
       reference: 'Bulut altyapısı yönetimi, Terraform veya CloudFormation gibi kod olarak altyapı araçları aracılığıyla kaynakları sağlamayı, CPU kullanımı ve istek oranları gibi metriklere dayalı otomatik ölçeklendirme politikaları uygulamayı, trafik dağıtımı için yük dengeleyicileri yapılandırmayı, izleme ve uyarı sistemleri kurmayı ve düzenli yedekleme programları ve test edilmiş geri yükleme süreçleriyle felaket kurtarma prosedürleri oluşturmayı içerir.'
     }
   ]
-  
+
   const [selectedExample, setSelectedExample] = useState(null)
-  
+
   const loadExample = (example) => {
     setText(example.text)
     setReference(example.reference)
     setSelectedExample(example.id)
   }
-  
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold mb-8">Çeviri Karşılaştırma</h1>
-      
+
       {/* Input Section */}
       <div className="card mb-8">
         <div className="mb-4">
@@ -232,7 +232,7 @@ function Compare() {
             placeholder="Çevirmek istediğiniz metni buraya yazın..."
           />
         </div>
-        
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             📚 Örnek Metinler (Seçin ve Test Edin)
@@ -253,7 +253,7 @@ function Compare() {
             ))}
           </select>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -268,7 +268,7 @@ function Compare() {
               <option value="tr">Türkçe</option>
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Hedef Dil
@@ -283,7 +283,7 @@ function Compare() {
             </select>
           </div>
         </div>
-        
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Çeviri Araçları
@@ -302,7 +302,7 @@ function Compare() {
             ))}
           </div>
         </div>
-        
+
         <button
           onClick={handleTranslate}
           disabled={isLoading}
@@ -311,7 +311,7 @@ function Compare() {
           {isLoading ? 'Çevriliyor...' : 'Çevir'}
         </button>
       </div>
-      
+
       {/* Loading Animation */}
       {isLoading && (
         <div className="card mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300">
@@ -329,14 +329,14 @@ function Compare() {
               En iyi sonucu size sunacağız, lütfen bekleyin...
             </p>
             <div className="mt-4 flex gap-2">
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
             </div>
           </div>
         </div>
       )}
-      
+
       {/* Results Section */}
       {results && !isLoading && (
         <div>
@@ -350,7 +350,7 @@ function Compare() {
               </div>
             </div>
           </div>
-          
+
           {/* En İyi Seçim Önerisi - ÜST KISIMDA */}
           {results && results.metrics && Object.keys(results.metrics).length > 0 && (() => {
             const rankedTools = Object.entries(results.metrics)
@@ -365,20 +365,20 @@ function Compare() {
             const second = rankedTools[1] || null
             const bestTool = best?.tool
             const bestScore = best?.score ?? 0
-            
+
             const toolNames = {
               google: 'Google Translate',
               deepl: 'DeepL',
               microsoft: 'Microsoft Translator',
               amazon: 'Amazon Translate'
             }
-            
+
             const accuracy = (bestScore * 100).toFixed(1)
             const margin = second ? ((best.score - second.score) * 100).toFixed(1) : null
             const band = getScoreBand(bestScore)
             const analysisText = getAnalysisByBand(band)
             const isEstimated = best?.metrics?.metric_mode === 'estimated_no_reference'
-            
+
             return (
               <div className="card mb-6 bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300">
                 <div className="flex items-center gap-4 mb-4">
@@ -388,7 +388,7 @@ function Compare() {
                     <p className="text-amber-700">Sizin için en uygun çeviri aracını belirledik</p>
                   </div>
                 </div>
-                
+
                 <div className="bg-white rounded-lg p-6 shadow-md">
                   <div className="flex items-center justify-between mb-4">
                     <div>
@@ -401,7 +401,7 @@ function Compare() {
                     </div>
                     <div className="text-7xl">🥇</div>
                   </div>
-                  
+
                   <div className="border-t pt-4">
                     <p className="text-gray-700 mb-2">
                       <strong>💡 Öneri:</strong> Bu metin türü için <strong className="text-amber-900">{toolNames[bestTool]}</strong> öncelikli seçenek olarak öne çıkıyor.
@@ -435,27 +435,27 @@ function Compare() {
               </div>
             )
           })()}
-          
+
           {/* Doğruluk Özeti - Sıralı */}
           {results && results.metrics && Object.keys(results.metrics).length > 0 && (() => {
             // Araçları doğruluk oranına göre sırala
             const sortedTools = [...selectedTools].sort((a, b) => {
               const scoreA = results.metrics[a] ? computeCompositeScore(results.metrics[a]) : -1
               const scoreB = results.metrics[b] ? computeCompositeScore(results.metrics[b]) : -1
-              
+
               return scoreB - scoreA
             })
-            
+
             const toolNames = {
               google: 'Google Translate',
               deepl: 'DeepL',
               microsoft: 'Microsoft Translator',
               amazon: 'Amazon Translate'
             }
-            
+
             const medals = ['🥇', '🥈', '🥉', '🏅']
             const colors = ['text-amber-600', 'text-gray-500', 'text-orange-600', 'text-blue-600']
-            
+
             return (
               <div className="card mb-6 bg-blue-50 border-blue-200">
                 <h3 className="text-lg font-semibold mb-4">📊 Tüm Sonuçlar (En İyiden En Kötüye)</h3>
@@ -463,11 +463,11 @@ function Compare() {
                   {sortedTools.map((tool, index) => {
                     const metrics = results?.metrics?.[tool]
                     if (!metrics) return null
-                    
+
                     // Ortalama doğruluk hesapla
                     const avgScore = computeCompositeScore(metrics)
                     const accuracy = (avgScore * 100).toFixed(1)
-                    
+
                     return (
                       <div key={tool} className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm">
                         <div className="flex items-center gap-3">
@@ -494,19 +494,19 @@ function Compare() {
               </div>
             )
           })()}
-          
+
           {/* Detaylı Çeviri Kartları */}
           {(() => {
             // Araçları doğruluk oranına göre sırala
             const sortedTools = results.metrics && Object.keys(results.metrics).length > 0
               ? [...selectedTools].sort((a, b) => {
-                  const scoreA = results.metrics[a] ? computeCompositeScore(results.metrics[a]) : -1
-                  const scoreB = results.metrics[b] ? computeCompositeScore(results.metrics[b]) : -1
-                  
-                  return scoreB - scoreA
-                })
+                const scoreA = results.metrics[a] ? computeCompositeScore(results.metrics[a]) : -1
+                const scoreB = results.metrics[b] ? computeCompositeScore(results.metrics[b]) : -1
+
+                return scoreB - scoreA
+              })
               : selectedTools
-            
+
             return (
               <div>
                 <h3 className="text-xl font-semibold mb-4">Detaylı Çeviri Sonuçları</h3>
