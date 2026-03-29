@@ -27,6 +27,7 @@ from evaluators import (
 )
 from data_processing import DatasetLoader
 from utils import Cache, load_dataset, save_results, format_time
+from compare_db import init_db, save_comparison, list_comparisons
 
 # .env dosyasını yükle
 load_dotenv()
@@ -67,6 +68,9 @@ dataset_loader = DatasetLoader(data_dir="data/processed")
 # Cache sistemi
 cache = Cache(cache_dir="cache", ttl_seconds=3600)
 
+# SQLite (karsilastirma kayitlari)
+init_db()
+
 # Aktif batch isleri
 batch_jobs = {}
 
@@ -88,7 +92,8 @@ def index():
             'GET /api/datasets',
             'POST /api/evaluate',
             'GET /api/results/summary',
-            'GET /api/translators/status'
+            'GET /api/translators/status',
+            'GET /api/comparisons'
         ]
     })
 
@@ -201,6 +206,19 @@ def translate():
             'timestamp': time.time()
         }
         compare_results.append(result_entry)
+
+        try:
+            save_comparison(
+                text,
+                source_lang,
+                target_lang,
+                translations,
+                metrics,
+                reference=reference,
+                category=category,
+            )
+        except Exception as e:
+            print(f"  [SQLite] Kayit hatasi: {e}")
         
         # Son 100 sonucu tut (memory icin)
         if len(compare_results) > 100:
@@ -315,6 +333,20 @@ def process_batch_job(job_id: str, segments: list, translator_names: list):
                 }
         
         results.append(segment_result)
+
+        if segment_result.get("metrics"):
+            try:
+                save_comparison(
+                    source_text,
+                    "en",
+                    "tr",
+                    segment_result["translations"],
+                    segment_result["metrics"],
+                    reference=reference,
+                    category=segment.get("category"),
+                )
+            except Exception as e:
+                print(f"  [SQLite] Batch kayit hatasi: {e}")
         
         # Ilerleme guncelle
         job['progress'] = ((idx + 1) / len(segments)) * 100
@@ -497,6 +529,18 @@ def calculate_summary(results: list) -> dict:
         'category_breakdown': category_breakdown,
         'available_tools': list(average_scores.keys())
     }
+
+@app.route('/api/comparisons', methods=['GET'])
+def get_comparisons():
+    """SQLite'a kaydedilen karsilastirma satirlarini listele"""
+    try:
+        limit = min(int(request.args.get("limit", 100)), 500)
+        offset = max(int(request.args.get("offset", 0)), 0)
+    except ValueError:
+        return jsonify({"error": "limit ve offset sayi olmali"}), 400
+    rows = list_comparisons(limit=limit, offset=offset)
+    return jsonify({"count": len(rows), "records": rows})
+
 
 @app.route('/api/cache/stats', methods=['GET'])
 def get_cache_stats():
