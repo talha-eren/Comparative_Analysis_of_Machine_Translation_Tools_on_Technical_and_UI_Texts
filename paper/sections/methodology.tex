@@ -1,0 +1,137 @@
+\section{Methodology}
+
+\subsection{Overview}
+
+Our evaluation framework consists of four main components: (1) dataset construction from multiple open-source localization resources, (2) translation using four commercial MT APIs, (3) automatic evaluation using multiple metrics, and (4) statistical analysis of results.
+
+\subsection{Dataset Construction}
+
+We compiled a comprehensive dataset from the following sources:
+
+\subsubsection{Technical Documentation Sources}
+
+\begin{itemize}
+    \item \textbf{OPUS GNOME Corpus} \cite{tiedemann2012parallel}: 10,000 segments from GNOME desktop documentation
+    \item \textbf{OPUS KDE Corpus}: 8,000 segments from KDE system documentation
+    \item \textbf{SAP Software Documentation} \cite{sap2020dataset}: 4,000 segments (methodology reference)
+    \item \textbf{GitHub Projects}: 3,000 segments from README files and API documentation of Turkish open-source projects
+\end{itemize}
+
+\subsubsection{UI String Sources}
+
+\begin{itemize}
+    \item \textbf{Mozilla Firefox i18n} \cite{mozilla2018localization}: 6,000 segments from browser UI strings
+    \item \textbf{Common UI Translations}: 4,000 segments covering buttons, forms, navigation elements
+    \item \textbf{GitHub i18n Files}: 5,000 segments from localization files of popular projects
+\end{itemize}
+
+\subsubsection{Turkish-English Parallel Corpus}
+
+\begin{itemize}
+    \item \textbf{MaCoCu TR-EN Corpus} \cite{macocu2021}: 10,000 segments filtered for technical content from 1.6M parallel sentences
+\end{itemize}
+
+\textbf{Total Dataset Size}: 50,000 parallel segments
+
+\subsection{Data Processing}
+
+We applied the following preprocessing steps:
+
+\begin{enumerate}
+    \item \textbf{Format Standardization}: Converted all sources to unified JSON format
+    \item \textbf{Deduplication}: Removed duplicate sentence pairs
+    \item \textbf{Quality Filtering}: Excluded segments with:
+    \begin{itemize}
+        \item Length < 5 or > 1000 characters
+        \item Purely numeric content
+        \item Special character ratio > 50\%
+    \end{itemize}
+    \item \textbf{Categorization}: Labeled segments as technical documentation, UI strings, or error messages
+    \item \textbf{Train/Test Split}: 80\% training, 20\% testing (10,000 segments)
+\end{enumerate}
+
+\subsection{Machine Translation Tools}
+
+We evaluated four commercial MT systems:
+
+\begin{table}[h]
+\centering
+\caption{Evaluated Machine Translation Tools}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Tool} & \textbf{API Version} & \textbf{Cost/1M chars} \\ \midrule
+Google Translate & Cloud Translation v2 & \$20 \\
+DeepL & DeepL API Pro & \$25 \\
+Microsoft Translator & Azure Cognitive v3.0 & \$10 \\
+Amazon Translate & AWS Translate & \$15 \\ \bottomrule
+\end{tabular}
+\label{tab:mt_tools}
+\end{table}
+
+All translations were performed using default settings without custom terminology or fine-tuning to ensure fair comparison.
+
+\subsection{Evaluation Metrics}
+
+We employed multiple automatic metrics to assess translation quality:
+
+\subsubsection{BLEU (Bilingual Evaluation Understudy)}
+
+BLEU \cite{papineni2002bleu} measures n-gram precision with brevity penalty:
+
+\begin{equation}
+BLEU = BP \cdot \exp\left(\sum_{n=1}^{N} w_n \log p_n\right)
+\end{equation}
+
+where $p_n$ is n-gram precision and $BP$ is the brevity penalty.
+
+\subsubsection{METEOR}
+
+METEOR \cite{banerjee2005meteor} incorporates synonymy and recall:
+
+\begin{equation}
+METEOR = F_{mean} \cdot (1 - Penalty)
+\end{equation}
+
+where $F_{mean}$ is the harmonic mean of precision and recall.
+
+\subsubsection{TER (Translation Error Rate)}
+
+TER \cite{snover2006study} calculates the minimum edit distance:
+
+\begin{equation}
+TER = \frac{\text{Number of Edits}}{\text{Average Reference Length}}
+\end{equation}
+
+\subsubsection{chrF++}
+
+chrF++ \cite{popovic2017chrf} uses character n-grams with word n-grams:
+
+\begin{equation}
+chrF++ = \frac{(1 + \beta^2) \cdot chrP \cdot chrR}{\beta^2 \cdot chrP + chrR}
+\end{equation}
+
+\subsection{Experimental Setup}
+
+For each test segment, we:
+
+\begin{enumerate}
+    \item Translated using all four MT tools
+    \item Calculated all four metrics against reference translation
+    \item Recorded translation time and estimated cost
+    \item Analyzed placeholder preservation and special character handling
+\end{enumerate}
+
+We performed statistical significance testing using paired t-tests and one-way ANOVA with post-hoc Tukey HSD tests.
+
+\subsection{Implementation}
+
+We developed an open-source web application with:
+
+\begin{itemize}
+    \item \textbf{Backend}: Python Flask with API wrappers for all MT services
+    \item \textbf{Frontend}: React-based interactive comparison interface
+    \item \textbf{Evaluation}: SacreBLEU \cite{post2018call} and NLTK implementations
+    \item \textbf{Analysis}: Jupyter notebooks for statistical analysis
+\end{itemize}
+
+The complete codebase and dataset are available at [GitHub URL].

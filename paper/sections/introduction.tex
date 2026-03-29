@@ -1,0 +1,44 @@
+\section{Introduction}
+
+Software localization has become a critical aspect of global software development, enabling applications to reach diverse linguistic markets. Machine translation (MT) tools have emerged as valuable assets in this process, offering rapid and cost-effective translation solutions. However, the quality of MT systems varies significantly across different tools and text types, particularly when dealing with domain-specific content such as technical documentation and user interface (UI) strings.
+
+\subsection{Motivation}
+
+Technical texts and UI strings present unique challenges for machine translation systems:
+
+\begin{itemize}
+    \item \textbf{Technical Documentation}: Contains domain-specific terminology, complex sentence structures, and requires high accuracy for comprehension.
+    \item \textbf{UI Strings}: Often short, context-dependent, and may contain placeholders (e.g., \texttt{\{variable\}}, \texttt{\%s}) that must be preserved.
+    \item \textbf{Error Messages}: Critical for user experience and must convey precise meaning.
+\end{itemize}
+
+While numerous MT tools are available (Google Translate, DeepL, Microsoft Translator, Amazon Translate), developers and localization teams lack comprehensive comparative data to guide their tool selection, especially for the English-Turkish language pair.
+
+\subsection{Research Questions}
+
+This study addresses the following research questions:
+
+\begin{enumerate}
+    \item[\textbf{RQ1:}] Which machine translation tool achieves the highest quality for technical documentation translation?
+    \item[\textbf{RQ2:}] Is there a significant performance difference between tools for UI string translation?
+    \item[\textbf{RQ3:}] How does text length affect translation quality across different tools?
+    \item[\textbf{RQ4:}] Which tool maintains better technical terminology consistency?
+    \item[\textbf{RQ5:}] How well do different tools preserve placeholders and special characters?
+    \item[\textbf{RQ6:}] What is the cost-quality trade-off for each tool?
+\end{enumerate}
+
+\subsection{Contributions}
+
+This paper makes the following contributions:
+
+\begin{itemize}
+    \item A curated dataset of 50,000+ English-Turkish parallel segments from software localization sources, categorized by text type (technical documentation, UI strings, error messages).
+    \item Comprehensive evaluation of four major MT tools using multiple automatic metrics (BLEU, METEOR, TER, chrF++).
+    \item Statistical analysis demonstrating significant performance differences across tools and text categories.
+    \item An open-source web application for interactive MT tool comparison.
+    \item Practical recommendations for software developers and localization teams.
+\end{itemize}
+
+\subsection{Paper Organization}
+
+The remainder of this paper is organized as follows: Section II reviews related work on MT evaluation and software localization. Section III describes our methodology, including dataset construction and evaluation metrics. Section IV details the dataset characteristics. Section V presents our experimental setup and results. Section VI discusses findings and implications. Section VII concludes with future work directions.

@@ -1,0 +1,93 @@
+\section{Discussion}
+
+\subsection{Interpretation of Results}
+
+Our comprehensive evaluation reveals nuanced performance differences across MT tools and text categories. The results challenge the assumption that a single "best" tool exists for all software localization scenarios.
+
+\subsubsection{Technical Documentation Translation}
+
+[Tool X]'s superior performance on technical documentation (BLEU=X.XX) can be attributed to:
+\begin{itemize}
+    \item Better handling of complex sentence structures
+    \item More consistent technical terminology
+    \item Superior context understanding in longer texts
+\end{itemize}
+
+However, the XX\% cost premium may not be justified for all projects, particularly when [Tool Y] achieves XX\% of the quality at XX\% of the cost.
+
+\subsubsection{UI String Translation Challenges}
+
+The lower scores on UI strings (average BLEU=X.XX vs X.XX for technical docs) reflect inherent challenges:
+
+\begin{enumerate}
+    \item \textbf{Brevity}: Short texts provide limited context for disambiguation
+    \item \textbf{Imperatives}: Turkish imperative mood requires careful handling
+    \item \textbf{Formality}: UI strings require appropriate formality level
+    \item \textbf{Placeholders}: Variable preservation is critical but challenging
+\end{enumerate}
+
+\subsection{Practical Implications}
+
+\subsubsection{Tool Selection Recommendations}
+
+Based on our findings, we recommend:
+
+\begin{itemize}
+    \item \textbf{For Technical Documentation}: Use [Tool X] when quality is paramount, or [Tool Y] for balanced cost-quality
+    \item \textbf{For UI Strings}: [Tool Y] provides best results; consider manual review for critical strings
+    \item \textbf{For Error Messages}: [Tool X] ensures accuracy; invest in human review given criticality
+    \item \textbf{For High-Volume Projects}: Microsoft Translator offers best cost efficiency
+\end{itemize}
+
+\subsubsection{Best Practices}
+
+\begin{enumerate}
+    \item \textbf{Provide Context}: When possible, translate entire paragraphs rather than isolated sentences
+    \item \textbf{Use Glossaries}: All tools support custom terminology; leverage this for consistency
+    \item \textbf{Post-Edit Critical Content}: Allocate human review budget to error messages and key UI elements
+    \item \textbf{Test Placeholders}: Always verify placeholder preservation in localized software
+    \item \textbf{Consider Hybrid Approaches}: Use different tools for different content types
+\end{enumerate}
+
+\subsection{Limitations}
+
+Our study has several limitations:
+
+\begin{enumerate}
+    \item \textbf{Language Pair}: Results specific to English-Turkish; other pairs may differ
+    \item \textbf{Automatic Metrics}: While correlated with human judgment, automatic metrics don't capture all quality aspects
+    \item \textbf{Temporal Validity}: MT systems continuously improve; results reflect [Date] versions
+    \item \textbf{Domain Specificity}: Focused on software domain; other technical domains may show different patterns
+    \item \textbf{No Fine-Tuning}: We evaluated default models; custom-trained models might perform differently
+\end{enumerate}
+
+\subsection{Comparison with Related Work}
+
+Our findings align with previous WMT evaluations \cite{wmt2020findings} showing DeepL's strong performance on European languages. However, our domain-specific focus reveals performance variations not apparent in general-domain evaluations.
+
+The lower scores on UI strings compared to technical documentation (XX\% decrease) corroborate findings from Mozilla's localization studies \cite{mozilla2018localization}, emphasizing the unique challenges of translating short, context-dependent strings.
+
+\subsection{Implications for Research}
+
+Our results suggest several directions for future research:
+
+\begin{enumerate}
+    \item \textbf{Context-Aware Translation}: Developing methods to provide UI context to MT systems
+    \item \textbf{Placeholder-Aware Models}: Training models specifically to preserve formatting elements
+    \item \textbf{Domain Adaptation}: Fine-tuning general MT models on software localization data
+    \item \textbf{Turkish-Specific Optimization}: Addressing morphological challenges in Turkish generation
+    \item \textbf{Hybrid Systems}: Combining strengths of different tools
+\end{enumerate}
+
+\subsection{Reproducibility}
+
+To ensure reproducibility, we provide:
+\begin{itemize}
+    \item Complete dataset with preprocessing scripts
+    \item API wrapper implementations
+    \item Evaluation metric calculations
+    \item Statistical analysis notebooks
+    \item Web application for interactive exploration
+\end{itemize}
+
+All materials are available at [GitHub URL] under [License].

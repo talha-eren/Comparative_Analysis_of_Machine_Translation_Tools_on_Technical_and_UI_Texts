@@ -1,0 +1,115 @@
+"""BLEU, chrF++ ve TER metriklerini hesaplama (SacreBLEU kullanarak)"""
+
+from typing import Optional
+
+try:
+    import sacrebleu
+    SACREBLEU_AVAILABLE = True
+except ImportError:
+    SACREBLEU_AVAILABLE = False
+    print("⚠ sacrebleu kurulu değil")
+
+def calculate_bleu(hypothesis: str, reference: str) -> Optional[float]:
+    """
+    BLEU skoru hesapla
+    
+    Args:
+        hypothesis: Çeviri (sistem çıktısı)
+        reference: Referans çeviri (doğru çeviri)
+    
+    Returns:
+        BLEU skoru (0-100 arası) veya None
+    """
+    if not SACREBLEU_AVAILABLE:
+        return None
+    
+    try:
+        # SacreBLEU tek referans için
+        bleu = sacrebleu.corpus_bleu([hypothesis], [[reference]])
+        return bleu.score / 100.0  # 0-1 arasına normalize et
+        
+    except Exception as e:
+        print(f"✗ BLEU hesaplama hatası: {e}")
+        return None
+
+def calculate_chrf(hypothesis: str, reference: str) -> Optional[float]:
+    """
+    chrF++ skoru hesapla
+    
+    Args:
+        hypothesis: Çeviri (sistem çıktısı)
+        reference: Referans çeviri
+    
+    Returns:
+        chrF++ skoru (0-1 arası) veya None
+    """
+    if not SACREBLEU_AVAILABLE:
+        return None
+    
+    try:
+        chrf = sacrebleu.corpus_chrf([hypothesis], [[reference]])
+        return chrf.score / 100.0  # 0-1 arasına normalize et
+        
+    except Exception as e:
+        print(f"✗ chrF hesaplama hatası: {e}")
+        return None
+
+def calculate_ter(hypothesis: str, reference: str) -> Optional[float]:
+    """
+    TER (Translation Error Rate) hesapla
+    
+    Args:
+        hypothesis: Çeviri (sistem çıktısı)
+        reference: Referans çeviri
+    
+    Returns:
+        TER skoru (0-1 arası, düşük = daha iyi) veya None
+    """
+    if not SACREBLEU_AVAILABLE:
+        return None
+    
+    try:
+        ter = sacrebleu.corpus_ter([hypothesis], [[reference]])
+        return ter.score / 100.0  # 0-1 arasına normalize et
+        
+    except Exception as e:
+        print(f"✗ TER hesaplama hatası: {e}")
+        return None
+
+def calculate_all_metrics(hypothesis: str, reference: str) -> dict:
+    """
+    Tüm SacreBLEU metriklerini hesapla
+    
+    Args:
+        hypothesis: Çeviri
+        reference: Referans çeviri
+    
+    Returns:
+        Metrik skorları dict
+    """
+    return {
+        'bleu': calculate_bleu(hypothesis, reference),
+        'chrf': calculate_chrf(hypothesis, reference),
+        'ter': calculate_ter(hypothesis, reference)
+    }
+
+def batch_calculate_bleu(hypotheses: list, references: list) -> list:
+    """
+    Toplu BLEU hesaplama
+    
+    Args:
+        hypotheses: Çeviriler listesi
+        references: Referans çeviriler listesi
+    
+    Returns:
+        BLEU skorları listesi
+    """
+    if not SACREBLEU_AVAILABLE:
+        return [None] * len(hypotheses)
+    
+    scores = []
+    for hyp, ref in zip(hypotheses, references):
+        score = calculate_bleu(hyp, ref)
+        scores.append(score)
+    
+    return scores

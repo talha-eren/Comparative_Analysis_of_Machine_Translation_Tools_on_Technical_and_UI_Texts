@@ -1,0 +1,41 @@
+\section{Related Work}
+
+\subsection{Machine Translation Systems}
+
+Neural Machine Translation (NMT) has revolutionized the field since its introduction \cite{sutskever2014sequence, bahdanau2014neural}. Modern commercial MT systems leverage transformer architectures \cite{vaswani2017attention} and large-scale multilingual training data.
+
+\textbf{Google Translate} uses Google's Neural Machine Translation (GNMT) system, supporting 100+ languages with continuous improvements through user feedback and parallel corpus expansion \cite{wu2016google}.
+
+\textbf{DeepL} has gained recognition for producing more natural-sounding translations, particularly for European languages, by training on extensive bilingual corpora and employing advanced neural architectures \cite{deepl2020}.
+
+\textbf{Microsoft Translator} integrates with Azure services and offers custom translation models with domain-specific terminology support \cite{microsoft2020translator}.
+
+\textbf{Amazon Translate} provides real-time translation services within the AWS ecosystem, with features for custom terminology and active learning \cite{amazon2019translate}.
+
+\subsection{Translation Quality Evaluation}
+
+Automatic evaluation metrics remain essential for large-scale MT assessment:
+
+\textbf{BLEU} (Bilingual Evaluation Understudy) \cite{papineni2002bleu} measures n-gram precision between hypothesis and reference translations, becoming the de facto standard despite known limitations.
+
+\textbf{METEOR} \cite{banerjee2005meteor} addresses BLEU's shortcomings by incorporating synonymy, stemming, and recall-oriented scoring.
+
+\textbf{TER} (Translation Error Rate) \cite{snover2006study} quantifies the edit distance between hypothesis and reference, simulating human post-editing effort.
+
+\textbf{chrF++} \cite{popovic2017chrf} uses character n-grams, proving particularly effective for morphologically rich languages like Turkish.
+
+Recent work has introduced neural metrics such as COMET \cite{rei2020comet} and BERTScore \cite{zhang2019bertscore}, though automatic metrics remain widely used for their efficiency and reproducibility.
+
+\subsection{Software Localization and Technical Translation}
+
+Software localization presents unique challenges distinct from general-domain translation \cite{esselink2000practical}. Several studies have examined MT for technical domains:
+
+\textbf{Technical Documentation}: Research on translating software documentation has shown that domain-specific training improves quality \cite{sap2020dataset}. The SAP Software Documentation Dataset \cite{sap2020dataset} and Salesforce Localization Dataset \cite{salesforce2019localization} provide valuable resources for this domain.
+
+\textbf{UI Translation}: Studies on UI string translation highlight challenges including context dependency, brevity, and placeholder preservation \cite{mozilla2018localization}. The OPUS corpus \cite{tiedemann2012parallel} includes extensive software localization data from GNOME, KDE, and Mozilla projects.
+
+\textbf{Turkish NLP}: While Turkish has received growing attention in NLP research \cite{turkish2020nlp}, comparative MT evaluation specifically for technical and UI texts remains limited. The MaCoCu project \cite{macocu2021} provides large-scale Turkish-English parallel corpora, though not domain-specific.
+
+\subsection{Comparative MT Studies}
+
+Previous comparative studies have evaluated MT systems across various language pairs and domains \cite{wmt2020findings, wmt2021findings}. However, most focus on news or general domains, with limited attention to software localization contexts. Our work fills this gap by providing comprehensive evaluation specifically for technical and UI texts in the English-Turkish pair.
