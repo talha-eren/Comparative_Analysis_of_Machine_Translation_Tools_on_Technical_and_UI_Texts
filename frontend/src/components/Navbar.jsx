@@ -6,10 +6,7 @@ function Navbar() {
   const navItems = [
     { path: '/', label: 'Ana Sayfa' },
     { path: '/compare', label: 'Karşılaştır' },
-    { path: '/batch-test', label: 'Toplu Test' },
-    { path: '/results', label: 'Sonuçlar' },
-    { path: '/datasets', label: 'Dataset' },
-    { path: '/analytics', label: 'Analiz' }
+    { path: '/analytics', label: 'Sonuçlar ve Analiz' }
   ]
   
   return (

@@ -73,6 +73,7 @@ batch_jobs = {}
 @app.route('/')
 def index():
     """Ana sayfa"""
+    print("[API] Ana sayfa istegi alindi")
     return jsonify({
         'message': 'Makine Çeviri Karşılaştırma API',
         'version': '0.1.0',
@@ -86,6 +87,16 @@ def index():
             'GET /api/results/summary',
             'GET /api/translators/status'
         ]
+    })
+
+@app.route('/api/test', methods=['GET'])
+def test():
+    """Test endpoint"""
+    print("[API] Test endpoint cagirildi")
+    return jsonify({
+        'status': 'ok',
+        'available_translators': list(available_translators.keys()),
+        'deepl_available': 'deepl' in available_translators
     })
 
 @app.route('/api/translators/status', methods=['GET'])
@@ -122,6 +133,12 @@ def translate():
     requested_translators = data.get('translators', list(available_translators.keys()))
     reference = data.get('reference')
     
+    print(f"\n[API] Ceviri istegi:")
+    print(f"  Metin: {text}")
+    print(f"  Dil: {source_lang} -> {target_lang}")
+    print(f"  Istenen ceviriciler: {requested_translators}")
+    print(f"  Kullanilabilir ceviriciler: {list(available_translators.keys())}")
+    
     if not text:
         return jsonify({'error': 'Metin boş olamaz'}), 400
     
@@ -145,12 +162,17 @@ def translate():
         
         # Çeviri yap
         start_time = time.time()
-        translation = translator.translate(text, source_lang, target_lang)
-        elapsed = (time.time() - start_time) * 1000
-        
-        if translation:
-            translations[translator_name] = translation
-            time_taken[translator_name] = round(elapsed, 2)
+        try:
+            translation = translator.translate(text, source_lang, target_lang)
+            elapsed = (time.time() - start_time) * 1000
+            
+            print(f"  [{translator_name}] Ceviri: {translation}")
+            
+            if translation:
+                translations[translator_name] = translation
+                time_taken[translator_name] = round(elapsed, 2)
+        except Exception as e:
+            print(f"  [{translator_name}] Hata: {e}")
             
             # Cache'e kaydet
             cache.set(text, translation, translator_name, source_lang, target_lang)
@@ -483,9 +505,10 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"⚠ Dataset yükleme hatası: {e}")
     
-    # Uygulamayı başlat
+    # Uygulamayı başlat (reloader kapalı - .env problemi çözmek için)
     app.run(
         host='0.0.0.0',
         port=5000,
-        debug=os.getenv('FLASK_DEBUG', 'True') == 'True'
+        debug=False,
+        use_reloader=False
     )

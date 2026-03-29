@@ -8,11 +8,16 @@ Tum ceviri API'lerini test eder ve durumlarini gosterir.
 import os
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Proje kök dizinini bul
 SCRIPT_DIR = Path(__file__).parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+
+# .env dosyasini yukle
+env_path = PROJECT_ROOT / '.env'
+load_dotenv(env_path)
 
 from backend.translators.google_translator import GoogleTranslator
 from backend.translators.deepl_translator import DeepLTranslator

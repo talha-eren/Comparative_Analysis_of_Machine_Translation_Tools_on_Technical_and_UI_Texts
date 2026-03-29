@@ -53,44 +53,55 @@ function Analytics() {
   
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold mb-8">Detaylı Analiz</h1>
+      <h1 className="text-3xl font-bold mb-8">Sonuçlar ve Analiz</h1>
       
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <div className="card">
+      {/* Doğruluk Özeti */}
+      <div className="card mb-8 bg-gradient-to-r from-blue-50 to-purple-50">
+        <h2 className="text-2xl font-semibold mb-6">📊 Genel Doğruluk Oranları</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {Object.entries(summary.average_scores || {}).map(([tool, scores]) => {
+            // Ortalama doğruluk hesapla
+            const avgScore = (
+              (scores.bleu || 0) + 
+              (scores.meteor || 0) + 
+              (scores.chrf || 0) + 
+              (1 - (scores.ter || 0))
+            ) / 4
+            const accuracy = (avgScore * 100).toFixed(1)
+            
+            const toolName = tool === 'google' ? 'Google' : 
+                           tool === 'deepl' ? 'DeepL' : 
+                           tool === 'microsoft' ? 'Microsoft' : 'Amazon'
+            
+            return (
+              <div key={tool} className="text-center p-6 bg-white rounded-lg shadow">
+                <div className="text-sm text-gray-600 mb-2">{toolName}</div>
+                <div className="text-5xl font-bold text-blue-600 mb-2">{accuracy}%</div>
+                <div className="text-xs text-gray-500">Ortalama Doğruluk</div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      
+      {/* Detaylı Metrikler */}
+      <div className="card mb-8">
+        <h2 className="text-xl font-semibold mb-6">📈 Detaylı Metrik Skorları</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <BarChart
             data={getMetricData('bleu')}
-            title="BLEU Skorları"
+            title="BLEU Skorları (Yüksek = İyi)"
             metric="BLEU"
           />
-        </div>
-        
-        <div className="card">
           <BarChart
             data={getMetricData('meteor')}
-            title="METEOR Skorları"
+            title="METEOR Skorları (Yüksek = İyi)"
             metric="METEOR"
-          />
-        </div>
-        
-        <div className="card">
-          <BarChart
-            data={getMetricData('chrf')}
-            title="chrF++ Skorları"
-            metric="chrF++"
-          />
-        </div>
-        
-        <div className="card">
-          <BarChart
-            data={getMetricData('ter')}
-            title="TER Skorları (Düşük = İyi)"
-            metric="TER"
           />
         </div>
       </div>
       
-      {/* Radar Chart */}
+      {/* Çok Boyutlu Karşılaştırma */}
       <div className="card mb-8">
         <RadarChart
           data={summary.average_scores}
@@ -98,35 +109,32 @@ function Analytics() {
         />
       </div>
       
-      {/* Insights */}
+      {/* Bulgular */}
       <div className="card">
-        <h2 className="text-xl font-semibold mb-4">Önemli Bulgular</h2>
+        <h2 className="text-xl font-semibold mb-4">🎯 Önemli Bulgular</h2>
         
         <div className="space-y-4">
-          <div className="p-4 bg-success-50 border-l-4 border-success-500 rounded">
-            <p className="font-semibold text-success-900 mb-1">En İyi Performans</p>
-            <p className="text-success-800">
-              {summary.best_tool} en yüksek BLEU skorunu aldı ({summary.best_bleu_score?.toFixed(3)})
+          <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded">
+            <p className="font-semibold text-green-900 mb-1">✅ En İyi Araç</p>
+            <p className="text-green-800">
+              <strong>{summary.best_tool}</strong> en yüksek BLEU skorunu aldı: <strong>{(summary.best_bleu_score * 100)?.toFixed(1)}%</strong> doğruluk
             </p>
           </div>
           
           <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-            <p className="font-semibold text-blue-900 mb-1">Toplam Test</p>
+            <p className="font-semibold text-blue-900 mb-1">📊 Test Kapsamı</p>
             <p className="text-blue-800">
-              {summary.total_translations?.toLocaleString()} çeviri {summary.available_tools?.length} farklı araçla test edildi
+              Toplam <strong>{summary.total_translations?.toLocaleString()}</strong> çeviri test edildi
             </p>
           </div>
           
-          {summary.category_breakdown && (
-            <div className="p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
-              <p className="font-semibold text-purple-900 mb-1">Kategori Dağılımı</p>
-              <p className="text-purple-800">
-                {Object.entries(summary.category_breakdown).map(([cat, stats]) => 
-                  `${cat}: ${stats.count} (${stats.percentage}%)`
-                ).join(', ')}
-              </p>
-            </div>
-          )}
+          <div className="p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
+            <p className="font-semibold text-purple-900 mb-1">📝 Değerlendirme</p>
+            <p className="text-purple-800">
+              Tüm çeviriler <strong>profesyonel referans çevirilerle</strong> karşılaştırıldı. 
+              Skorlar BLEU, METEOR, chrF++ ve TER metriklerine göre hesaplandı.
+            </p>
+          </div>
         </div>
       </div>
     </div>
