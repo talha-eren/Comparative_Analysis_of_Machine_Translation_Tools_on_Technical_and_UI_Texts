@@ -520,10 +520,14 @@ def internal_error(error):
     return jsonify({'error': 'Sunucu hatasi'}), 500
 
 if __name__ == '__main__':
+    # FLASK_PORT veya PORT (ör. macOS'ta 5000 doluysa .env içinde FLASK_PORT=5001)
+    _port = os.getenv('FLASK_PORT') or os.getenv('PORT') or '5000'
+    port = int(_port)
+
     print("\n" + "="*60)
     print("Flask Backend Baslatiliyor")
     print("="*60)
-    print(f"URL: http://localhost:5000")
+    print(f"URL: http://localhost:{port}")
     print(f"Kullanilabilir araclar: {len(available_translators)}")
     print("="*60 + "\n")
     
@@ -536,7 +540,7 @@ if __name__ == '__main__':
     # Uygulamayi baslat (reloader kapali - .env problemi cozmek icin)
     app.run(
         host='0.0.0.0',
-        port=5000,
+        port=port,
         debug=False,
         use_reloader=False
     )
