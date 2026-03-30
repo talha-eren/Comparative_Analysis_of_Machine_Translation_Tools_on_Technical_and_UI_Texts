@@ -9,6 +9,13 @@ except ImportError:
     SACREBLEU_AVAILABLE = False
     print("⚠ sacrebleu kurulu değil")
 
+
+def _is_short_text(hypothesis: str, reference: str) -> bool:
+    """Kisa stringler için sentence-level metric daha stabildir."""
+    hyp_tokens = (hypothesis or "").split()
+    ref_tokens = (reference or "").split()
+    return min(len(hyp_tokens), len(ref_tokens)) <= 6
+
 def calculate_bleu(hypothesis: str, reference: str) -> Optional[float]:
     """
     BLEU skoru hesapla
@@ -24,8 +31,10 @@ def calculate_bleu(hypothesis: str, reference: str) -> Optional[float]:
         return None
     
     try:
-        # SacreBLEU tek referans için
-        bleu = sacrebleu.corpus_bleu([hypothesis], [[reference]])
+        if _is_short_text(hypothesis, reference) and hasattr(sacrebleu, 'sentence_bleu'):
+            bleu = sacrebleu.sentence_bleu(hypothesis, [reference])
+        else:
+            bleu = sacrebleu.corpus_bleu([hypothesis], [[reference]])
         return bleu.score / 100.0  # 0-1 arasına normalize et
         
     except Exception as e:
@@ -47,7 +56,10 @@ def calculate_chrf(hypothesis: str, reference: str) -> Optional[float]:
         return None
     
     try:
-        chrf = sacrebleu.corpus_chrf([hypothesis], [[reference]])
+        if _is_short_text(hypothesis, reference) and hasattr(sacrebleu, 'sentence_chrf'):
+            chrf = sacrebleu.sentence_chrf(hypothesis, [reference])
+        else:
+            chrf = sacrebleu.corpus_chrf([hypothesis], [[reference]])
         return chrf.score / 100.0  # 0-1 arasına normalize et
         
     except Exception as e:
@@ -69,7 +81,10 @@ def calculate_ter(hypothesis: str, reference: str) -> Optional[float]:
         return None
     
     try:
-        ter = sacrebleu.corpus_ter([hypothesis], [[reference]])
+        if _is_short_text(hypothesis, reference) and hasattr(sacrebleu, 'sentence_ter'):
+            ter = sacrebleu.sentence_ter(hypothesis, [reference])
+        else:
+            ter = sacrebleu.corpus_ter([hypothesis], [[reference]])
         return ter.score / 100.0  # 0-1 arasına normalize et
         
     except Exception as e:

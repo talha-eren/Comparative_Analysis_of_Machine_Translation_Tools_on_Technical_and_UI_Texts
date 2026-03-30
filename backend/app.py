@@ -7,6 +7,7 @@ Ana uygulama dosyasi
 import os
 import time
 import uuid
+import re
 from pathlib import Path
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -77,6 +78,62 @@ batch_jobs = {}
 # Karsilastir sayfasindan gelen sonuclari sakla
 compare_results = []
 
+# Dataset tabanli otomatik referans indeksi (source_text -> target_text)
+reference_index = {}
+reference_index_loose = {}
+
+
+def _normalize_text(value: str) -> str:
+    """Metni karşılaştırma için normalize et."""
+    return " ".join((value or "").strip().lower().split())
+
+
+def _normalize_text_loose(value: str) -> str:
+    """Noktalama farklarını yok sayan daha toleranslı normalize."""
+    text = _normalize_text(value)
+    text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
+    return " ".join(text.split())
+
+
+def _load_reference_index():
+    """Islenmis dataset'ten referans indeksini yükle."""
+    global reference_index, reference_index_loose
+    if reference_index:
+        return
+
+    data_path = Path("data/processed/all_dataset.json")
+    if not data_path.exists():
+        return
+
+    try:
+        rows = load_dataset(str(data_path))
+        for row in rows:
+            src = _normalize_text(row.get("source_text", ""))
+            src_loose = _normalize_text_loose(row.get("source_text", ""))
+            tgt = (row.get("target_text") or "").strip()
+            if src and tgt and src not in reference_index:
+                reference_index[src] = tgt
+            if src_loose and tgt and src_loose not in reference_index_loose:
+                reference_index_loose[src_loose] = tgt
+        print(f"[OK] Otomatik referans indeksi yuklendi: {len(reference_index)}")
+    except Exception as e:
+        print(f"[!] Referans indeksi yuklenemedi: {e}")
+
+
+def _find_reference_for_text(text: str):
+    """Kaynak metin için datasetten referans bul."""
+    if not reference_index:
+        _load_reference_index()
+    normalized = _normalize_text(text)
+    if normalized in reference_index:
+        return reference_index[normalized], "dataset_auto_exact"
+
+    normalized_loose = _normalize_text_loose(text)
+    if normalized_loose in reference_index_loose:
+        return reference_index_loose[normalized_loose], "dataset_auto_loose"
+
+    return None, None
+
 @app.route('/')
 def index():
     """Ana sayfa"""
@@ -133,13 +190,21 @@ def translate():
         "reference": "string" (opsiyonel, metrik hesaplama icin)
     }
     """
-    data = request.get_json()
+    data = request.get_json() or {}
     
     text = data.get('text', '').strip()
     source_lang = data.get('source_lang', 'en')
     target_lang = data.get('target_lang', 'tr')
     requested_translators = data.get('translators', list(available_translators.keys()))
     reference = data.get('reference')
+    if reference:
+        reference = reference.strip()
+    auto_reference = None
+    auto_reference_source = None
+    if not reference:
+        auto_reference, auto_reference_source = _find_reference_for_text(text)
+        if auto_reference:
+            reference = auto_reference
     category = data.get('category', 'technical')
     
     print(f"\n[API] Ceviri istegi:")
@@ -155,7 +220,7 @@ def translate():
     translations = {}
     metrics = {}
     back_translations = {}
-    metric_mode = 'reference' if reference else 'estimated_back_translation'
+    metric_mode = 'reference_auto_dataset' if auto_reference else ('reference' if reference else 'estimated_back_translation')
     time_taken = {}
     
     for translator_name in requested_translators:
@@ -220,6 +285,7 @@ def translate():
         result_entry = {
             'source_text': text,
             'reference': reference,
+            'reference_source': auto_reference_source if auto_reference else ('user_input' if reference else None),
             'metric_mode': metric_mode,
             'category': category,
             'translations': translations,
@@ -250,6 +316,8 @@ def translate():
         'translations': translations,
         'metrics': metrics if metrics else None,
         'metric_mode': metric_mode if metrics else None,
+        'reference': reference if reference else None,
+        'reference_source': auto_reference_source if auto_reference else ('user_input' if reference else None),
         'back_translations': back_translations if back_translations else None,
         'time_taken_ms': time_taken,
         'source_text': text,
