@@ -17,8 +17,7 @@ from dotenv import load_dotenv
 from translators import (
     GoogleTranslator, 
     DeepLTranslator, 
-    MicrosoftTranslator, 
-    AmazonTranslator
+    MicrosoftTranslator
 )
 from evaluators import (
     calculate_bleu, 
@@ -41,6 +40,9 @@ CORS(app)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key')
 app.config['JSON_AS_ASCII'] = False
 
+BACKEND_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BACKEND_DIR.parent
+
 # Ceviri araclarini baslat
 print("\n" + "="*60)
 print("Ceviri Araclari Baslatiliyor")
@@ -49,8 +51,7 @@ print("="*60 + "\n")
 translators = {
     'google': GoogleTranslator(),
     'deepl': DeepLTranslator(),
-    'microsoft': MicrosoftTranslator(),
-    'amazon': AmazonTranslator()
+    'microsoft': MicrosoftTranslator()
 }
 
 # Kullanilabilir araclari kontrol et
@@ -101,7 +102,7 @@ def _load_reference_index():
     if reference_index:
         return
 
-    data_path = Path("data/processed/all_dataset.json")
+    data_path = PROJECT_ROOT / "data" / "processed" / "all_dataset.json"
     if not data_path.exists():
         return
 
@@ -186,7 +187,7 @@ def translate():
         "text": "string",
         "source_lang": "en",
         "target_lang": "tr",
-        "translators": ["google", "deepl", "microsoft", "amazon"],
+        "translators": ["google", "deepl", "microsoft"],
         "reference": "string" (opsiyonel, metrik hesaplama icin)
     }
     """
@@ -277,6 +278,14 @@ def translate():
                             'ter': calculate_ter(back_translation, text),
                             'chrf': calculate_chrf(back_translation, text)
                         }
+                    else:
+                        # Geri ceviri üretilemezse UI tarafında boş kalmaması için fallback
+                        metrics[translator_name] = {
+                            'bleu': 0.0,
+                            'meteor': 0.0,
+                            'ter': 1.0,
+                            'chrf': 0.0
+                        }
         except Exception as e:
             print(f"  [{translator_name}] Hata: {e}")
     
@@ -304,6 +313,8 @@ def translate():
                 metrics,
                 reference=reference,
                 category=category,
+                metric_mode=metric_mode,
+                reference_source='dataset_auto' if auto_reference else ('user_input' if reference else None),
             )
         except Exception as e:
             print(f"  [SQLite] Kayit hatasi: {e}")
@@ -436,6 +447,8 @@ def process_batch_job(job_id: str, segments: list, translator_names: list):
                     segment_result["metrics"],
                     reference=reference,
                     category=segment.get("category"),
+                    metric_mode="reference",
+                    reference_source="dataset_batch",
                 )
             except Exception as e:
                 print(f"  [SQLite] Batch kayit hatasi: {e}")
@@ -537,27 +550,87 @@ def get_results(job_id):
 @app.route('/api/results/summary', methods=['GET'])
 def get_summary():
     """Tum sonuclarin ozetini al"""
-    # Tum tamamlanmis job'larin sonuclarini birlestir
-    all_results = []
-    
-    for job in batch_jobs.values():
-        if job['status'] == 'completed':
-            all_results.extend(job['results'])
-    
-    # Compare sayfasindan gelen sonuclari da ekle
-    all_results.extend(compare_results)
-    
-    # Eger hic sonuc yoksa, bos mesaj dondur
-    if not all_results:
+    db_rows = list_comparisons(limit=None, offset=0)
+    if not db_rows:
         return jsonify({
             'message': 'Henuz test sonucu yok. Karsilastir sayfasindan ceviri yapin.',
             'average_scores': {},
             'total_translations': 0
         })
-    
-    summary = calculate_summary(all_results)
-    
+
+    summary = calculate_summary_from_db(db_rows)
     return jsonify(summary)
+
+
+def calculate_summary_from_db(rows: list) -> dict:
+    """SQLite satırlarından özet istatistik üret."""
+    if not rows:
+        return {}
+
+    tool_scores = {}
+    category_breakdown = {}
+
+    for row in rows:
+        category = row.get('category') or 'unknown'
+        category_breakdown[category] = category_breakdown.get(category, 0) + 1
+
+        metrics = row.get('metrics')
+        if isinstance(metrics, dict):
+            for tool, tool_metric in metrics.items():
+                if not isinstance(tool_metric, dict):
+                    continue
+                if tool not in tool_scores:
+                    tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': []}
+                for metric_name in ('bleu', 'meteor', 'ter', 'chrf'):
+                    val = tool_metric.get(metric_name)
+                    if val is not None:
+                        tool_scores[tool][metric_name].append(val)
+        else:
+            # Eski kayitlar: yalnizca BLEU kolonlari
+            legacy_map = {
+                'google': row.get('google_score'),
+                'deepl': row.get('deepl_score'),
+                'microsoft': row.get('microsoft_score'),
+            }
+            for tool, bleu_val in legacy_map.items():
+                if bleu_val is None:
+                    continue
+                if tool not in tool_scores:
+                    tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': []}
+                tool_scores[tool]['bleu'].append(bleu_val)
+
+    average_scores = {}
+    for tool, metrics in tool_scores.items():
+        average_scores[tool] = {}
+        for metric_name, values in metrics.items():
+            if values:
+                average_scores[tool][metric_name] = round(sum(values) / len(values), 4)
+
+    best_tool = None
+    best_bleu = 0
+    for tool, scores in average_scores.items():
+        if scores.get('bleu', 0) > best_bleu:
+            best_bleu = scores['bleu']
+            best_tool = tool
+
+    total = len(rows)
+    category_pct = {
+        cat: {
+            'count': count,
+            'percentage': round((count / total) * 100, 1) if total else 0,
+        }
+        for cat, count in category_breakdown.items()
+    }
+
+    return {
+        'total_translations': total,
+        'average_scores': average_scores,
+        'best_tool': best_tool,
+        'best_bleu_score': best_bleu,
+        'category_breakdown': category_pct,
+        'available_tools': list(average_scores.keys()),
+        'data_source': 'sqlite',
+    }
 
 def calculate_summary(results: list) -> dict:
     """

@@ -22,7 +22,6 @@ load_dotenv(env_path)
 from backend.translators.google_translator import GoogleTranslator
 from backend.translators.deepl_translator import DeepLTranslator
 from backend.translators.microsoft_translator import MicrosoftTranslator
-from backend.translators.amazon_translator import AmazonTranslator
 
 # Test metni
 TEST_TEXT = "Hello, this is a test."
@@ -80,10 +79,6 @@ def main():
     # Microsoft
     microsoft = MicrosoftTranslator()
     results['Microsoft'] = test_translator(microsoft, "Microsoft Translator")
-    
-    # Amazon
-    amazon = AmazonTranslator()
-    results['Amazon'] = test_translator(amazon, "Amazon Translate")
     
     # Ozet
     print("\n" + "="*60)

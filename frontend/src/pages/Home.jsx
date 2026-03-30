@@ -58,8 +58,7 @@ function Home() {
   const tools = [
     { name: 'Google Translate', key: 'google', color: 'from-blue-600 to-blue-400' },
     { name: 'DeepL', key: 'deepl', color: 'from-slate-800 to-slate-600' },
-    { name: 'Microsoft', key: 'microsoft', color: 'from-cyan-600 to-blue-500' },
-    { name: 'Amazon', key: 'amazon', color: 'from-orange-500 to-yellow-500' }
+    { name: 'Microsoft', key: 'microsoft', color: 'from-cyan-600 to-blue-500' }
   ]
   
   return (

@@ -4,7 +4,7 @@ import { startBatchTranslation, getBatchStatus, getDatasets } from '../services/
 function BatchTest() {
   const [datasets, setDatasets] = useState([])
   const [selectedDataset, setSelectedDataset] = useState('test_set')
-  const [selectedTools, setSelectedTools] = useState(['google', 'deepl', 'microsoft', 'amazon'])
+  const [selectedTools, setSelectedTools] = useState(['google', 'deepl', 'microsoft'])
   const [sampleSize, setSampleSize] = useState(1000)
   const [isRunning, setIsRunning] = useState(false)
   const [jobId, setJobId] = useState(null)
@@ -83,8 +83,7 @@ function BatchTest() {
   const tools = [
     { id: 'google', name: 'Google Translate' },
     { id: 'deepl', name: 'DeepL' },
-    { id: 'microsoft', name: 'Microsoft Translator' },
-    { id: 'amazon', name: 'Amazon Translate' }
+    { id: 'microsoft', name: 'Microsoft Translator' }
   ]
   
   return (

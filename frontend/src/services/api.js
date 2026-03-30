@@ -9,7 +9,7 @@ const api = axios.create({
   }
 })
 
-export const translateText = async (text, sourceLang = 'en', targetLang = 'tr', translators = ['google', 'deepl', 'microsoft', 'amazon'], reference = null, category = 'technical') => {
+export const translateText = async (text, sourceLang = 'en', targetLang = 'tr', translators = ['google', 'deepl', 'microsoft'], reference = null, category = 'technical') => {
   const response = await api.post('/api/translate', {
     text,
     source_lang: sourceLang,
@@ -50,6 +50,13 @@ export const evaluateTranslation = async (translation, reference) => {
 
 export const getResultsSummary = async () => {
   const response = await api.get('/api/results/summary')
+  return response.data
+}
+
+export const getComparisons = async (limit = 100, offset = 0) => {
+  const response = await api.get('/api/comparisons', {
+    params: { limit, offset }
+  })
   return response.data
 }
 

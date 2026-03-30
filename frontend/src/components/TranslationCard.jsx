@@ -14,15 +14,13 @@ function TranslationCard({ tool, translation, metrics, timeTaken, isLoading }) {
   const toolColors = {
     google: 'border-blue-500',
     deepl: 'border-indigo-500',
-    microsoft: 'border-cyan-500',
-    amazon: 'border-orange-500'
+    microsoft: 'border-cyan-500'
   }
   
   const toolNames = {
     google: 'Google Translate',
     deepl: 'DeepL',
-    microsoft: 'Microsoft Translator',
-    amazon: 'Amazon Translate'
+    microsoft: 'Microsoft Translator'
   }
   
   return (

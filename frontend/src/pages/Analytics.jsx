@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { getResultsSummary } from '../services/api'
+import { getResultsSummary, getComparisons } from '../services/api'
 import BarChart from '../components/charts/BarChart'
 import RadarChart from '../components/charts/RadarChart'
 
 function Analytics() {
   const [summary, setSummary] = useState(null)
+  const [history, setHistory] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   
   useEffect(() => {
@@ -14,8 +15,12 @@ function Analytics() {
   const loadSummary = async () => {
     setIsLoading(true)
     try {
-      const data = await getResultsSummary()
-      setSummary(data)
+      const [summaryData, historyData] = await Promise.all([
+        getResultsSummary(),
+        getComparisons(100, 0)
+      ])
+      setSummary(summaryData)
+      setHistory(historyData.records || [])
     } catch (error) {
       console.error('Analiz verileri yüklenemedi:', error)
     } finally {
@@ -82,7 +87,7 @@ function Analytics() {
             
             const toolName = tool === 'google' ? 'Google' : 
                            tool === 'deepl' ? 'DeepL' : 
-                           tool === 'microsoft' ? 'Microsoft' : 'Amazon'
+                           tool === 'microsoft' ? 'Microsoft' : tool
             
             return (
               <div key={tool} className="text-center p-6 bg-white rounded-lg shadow">
@@ -147,6 +152,46 @@ function Analytics() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Geçmiş Çeviriler */}
+      <div className="card mt-8">
+        <h2 className="text-xl font-semibold mb-4">🗂 Geçmiş Çeviriler (SQLite)</h2>
+
+        {history.length === 0 ? (
+          <p className="text-gray-600">Geçmiş kayıt bulunamadı.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kaynak Metin</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">En İyi Araç</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Skor</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {history.map((row) => (
+                  <tr key={row.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 text-sm text-gray-700">
+                      {row.created_at ? new Date(row.created_at * 1000).toLocaleString('tr-TR') : '-'}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-800 max-w-md truncate" title={row.text_en || ''}>
+                      {row.text_en || '-'}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-700">{row.category || '-'}</td>
+                    <td className="px-4 py-2 text-sm text-gray-700">{row.best_translator || '-'}</td>
+                    <td className="px-4 py-2 text-sm text-gray-700">
+                      {row.best_score !== null && row.best_score !== undefined ? Number(row.best_score).toFixed(4) : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )

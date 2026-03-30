@@ -27,7 +27,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "backend"))
 from dotenv import load_dotenv
 load_dotenv()
 
-from translators import GoogleTranslator, DeepLTranslator, MicrosoftTranslator, AmazonTranslator
+from translators import GoogleTranslator, DeepLTranslator, MicrosoftTranslator
 from evaluators import calculate_bleu, calculate_meteor, calculate_ter, calculate_chrf
 from utils import load_dataset, save_results, format_time
 
@@ -39,7 +39,7 @@ def parse_args():
                        help='Test edilecek segment sayısı (default: 1000)')
     
     parser.add_argument('--tools', nargs='+', default=['all'],
-                       help='Çeviri araçları (google, deepl, microsoft, amazon, all)')
+                       help='Çeviri araçları (google, deepl, microsoft, all)')
     
     parser.add_argument('--category', type=str, default=None,
                        help='Kategori filtresi (technical, ui, error)')
@@ -69,8 +69,7 @@ def initialize_translators(tool_names):
     all_translators = {
         'google': GoogleTranslator(),
         'deepl': DeepLTranslator(),
-        'microsoft': MicrosoftTranslator(),
-        'amazon': AmazonTranslator()
+        'microsoft': MicrosoftTranslator()
     }
     
     # 'all' seçiliyse tüm araçları kullan

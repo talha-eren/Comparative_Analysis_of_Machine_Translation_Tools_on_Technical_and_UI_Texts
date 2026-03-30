@@ -11,7 +11,7 @@ function Compare() {
   const [sourceLang, setSourceLang] = useState('en')
   const [targetLang, setTargetLang] = useState('tr')
   const [category, setCategory] = useState('technical')
-  const [selectedTools, setSelectedTools] = useState(['google', 'deepl', 'microsoft', 'amazon'])
+  const [selectedTools, setSelectedTools] = useState(['google', 'deepl', 'microsoft'])
   const [isLoading, setIsLoading] = useState(false)
   const [results, setResults] = useState(() => {
     const saved = localStorage.getItem('compare_results')
@@ -35,8 +35,7 @@ function Compare() {
   const tools = [
     { id: 'google', name: 'Google Translate' },
     { id: 'deepl', name: 'DeepL' },
-    { id: 'microsoft', name: 'Microsoft Translator' },
-    { id: 'amazon', name: 'Amazon Translate' }
+    { id: 'microsoft', name: 'Microsoft Translator' }
   ]
   
   const handleToolToggle = (toolId) => {
@@ -98,78 +97,6 @@ function Compare() {
     }
   }
   
-  const exampleTexts = [
-    {
-      id: 1,
-      title: 'API Dokümantasyonu',
-      text: 'The API endpoint accepts HTTP POST requests with JSON payloads containing authentication tokens, request parameters, and optional metadata fields. The server validates the incoming data structure, processes the business logic asynchronously using a message queue system, and returns a standardized response object with status codes, result data, and error messages if applicable. Rate limiting is enforced at 100 requests per minute per API key to prevent abuse.',
-      reference: 'API uç noktası, kimlik doğrulama belirteçleri, istek parametreleri ve isteğe bağlı meta veri alanlarını içeren JSON yükleriyle HTTP POST isteklerini kabul eder. Sunucu, gelen veri yapısını doğrular, iş mantığını bir mesaj kuyruğu sistemi kullanarak eşzamansız olarak işler ve durum kodları, sonuç verileri ve varsa hata mesajlarını içeren standartlaştırılmış bir yanıt nesnesi döndürür. Kötüye kullanımı önlemek için API anahtarı başına dakikada 100 istek hız sınırlaması uygulanır.'
-    },
-    {
-      id: 2,
-      text: 'When implementing a microservices architecture, it is crucial to establish proper service discovery mechanisms, implement circuit breakers for fault tolerance, and design comprehensive monitoring solutions. Each service should maintain its own database to ensure loose coupling, communicate through well-defined APIs using REST or gRPC protocols, and handle failures gracefully with appropriate retry strategies and fallback mechanisms.',
-      reference: 'Bir mikro hizmet mimarisi uygularken, uygun hizmet keşif mekanizmaları oluşturmak, hata toleransı için devre kesiciler uygulamak ve kapsamlı izleme çözümleri tasarlamak çok önemlidir. Her hizmet, gevşek bağlantıyı sağlamak için kendi veritabanını korumalı, REST veya gRPC protokollerini kullanarak iyi tanımlanmış API\'ler aracılığıyla iletişim kurmalı ve uygun yeniden deneme stratejileri ve yedek mekanizmalarla hataları zarif bir şekilde ele almalıdır.'
-    },
-    {
-      id: 3,
-      text: 'The authentication middleware intercepts incoming requests, extracts bearer tokens from authorization headers, validates them against the token store, and attaches user context to the request object. If validation fails, it returns a 401 Unauthorized response with appropriate error details. The middleware also handles token refresh logic automatically when tokens are close to expiration.',
-      reference: 'Kimlik doğrulama ara yazılımı gelen istekleri yakalar, yetkilendirme başlıklarından taşıyıcı belirteçleri çıkarır, bunları belirteç deposuna karşı doğrular ve kullanıcı bağlamını istek nesnesine ekler. Doğrulama başarısız olursa, uygun hata ayrıntılarıyla 401 Yetkisiz yanıtı döndürür. Ara yazılım ayrıca belirteçlerin süresinin dolmasına yakın olduğunda belirteç yenileme mantığını otomatik olarak işler.'
-    },
-    {
-      id: 4,
-      text: 'Modern web applications leverage client-side rendering frameworks like React or Vue.js to create dynamic, responsive user interfaces. These frameworks utilize virtual DOM diffing algorithms to minimize actual DOM manipulations, implement component-based architectures for code reusability, and provide state management solutions through hooks or dedicated libraries like Redux or Vuex.',
-      reference: 'Modern web uygulamaları, dinamik ve duyarlı kullanıcı arayüzleri oluşturmak için React veya Vue.js gibi istemci tarafı işleme çerçevelerinden yararlanır. Bu çerçeveler, gerçek DOM manipülasyonlarını en aza indirmek için sanal DOM karşılaştırma algoritmalarını kullanır, kod yeniden kullanılabilirliği için bileşen tabanlı mimariler uygular ve hook\'lar veya Redux veya Vuex gibi özel kütüphaneler aracılığıyla durum yönetimi çözümleri sağlar.'
-    },
-    {
-      id: 5,
-      text: 'Database optimization requires careful analysis of query patterns, proper indexing strategies, and efficient schema design. Composite indexes should be created for frequently joined columns, query execution plans must be analyzed to identify bottlenecks, and denormalization techniques may be applied selectively to improve read performance while maintaining data consistency through application-level constraints.',
-      reference: 'Veritabanı optimizasyonu, sorgu desenlerinin dikkatli bir şekilde analiz edilmesini, uygun indeksleme stratejilerini ve verimli şema tasarımını gerektirir. Sık birleştirilen sütunlar için bileşik indeksler oluşturulmalı, darboğazları belirlemek için sorgu yürütme planları analiz edilmeli ve okuma performansını artırmak için seçici olarak normalleştirme teknikleri uygulanabilir, aynı zamanda uygulama düzeyinde kısıtlamalar aracılığıyla veri tutarlılığı korunmalıdır.'
-    },
-    {
-      id: 6,
-      text: 'Container orchestration platforms like Kubernetes provide automated deployment, scaling, and management of containerized applications across clusters of hosts. They handle service discovery, load balancing, rolling updates, and self-healing capabilities. Configuration is managed through declarative YAML manifests that define desired state, and the control plane continuously reconciles actual state with desired state.',
-      reference: 'Kubernetes gibi konteyner orkestrasyon platformları, ana bilgisayar kümeleri arasında konteynerleştirilmiş uygulamaların otomatik dağıtımını, ölçeklendirmesini ve yönetimini sağlar. Hizmet keşfi, yük dengeleme, kademeli güncellemeler ve kendi kendini iyileştirme yeteneklerini yönetirler. Yapılandırma, istenen durumu tanımlayan bildirimsel YAML manifestoları aracılığıyla yönetilir ve kontrol düzlemi, gerçek durumu istenen durumla sürekli olarak uzlaştırır.'
-    },
-    {
-      id: 7,
-      text: 'Implementing secure authentication systems requires multiple layers of protection including password hashing with salt using algorithms like bcrypt or Argon2, secure session management with HTTP-only cookies, CSRF token validation, rate limiting on login endpoints, and multi-factor authentication options. Additionally, all sensitive operations should be logged for audit purposes and suspicious activities should trigger automated alerts.',
-      reference: 'Güvenli kimlik doğrulama sistemlerinin uygulanması, bcrypt veya Argon2 gibi algoritmalar kullanılarak tuz ile şifre karması oluşturma, yalnızca HTTP tanımlama bilgileriyle güvenli oturum yönetimi, CSRF belirteci doğrulaması, giriş uç noktalarında hız sınırlaması ve çok faktörlü kimlik doğrulama seçenekleri dahil olmak üzere birden fazla koruma katmanı gerektirir. Ek olarak, tüm hassas işlemler denetim amaçlı olarak günlüğe kaydedilmeli ve şüpheli faaliyetler otomatik uyarıları tetiklemelidir.'
-    },
-    {
-      id: 8,
-      text: 'Real-time data synchronization between distributed systems can be achieved through event-driven architectures using message brokers like RabbitMQ or Apache Kafka. Events are published to topics when state changes occur, and interested services subscribe to relevant topics to receive updates. This decoupled approach enables horizontal scaling, improves fault tolerance, and allows services to process events asynchronously at their own pace.',
-      reference: 'Dağıtık sistemler arasında gerçek zamanlı veri senkronizasyonu, RabbitMQ veya Apache Kafka gibi mesaj aracıları kullanılarak olay odaklı mimariler aracılığıyla sağlanabilir. Durum değişiklikleri meydana geldiğinde olaylar konulara yayınlanır ve ilgili hizmetler güncellemeleri almak için ilgili konulara abone olur. Bu ayrıştırılmış yaklaşım, yatay ölçeklendirmeyi sağlar, hata toleransını artırır ve hizmetlerin olayları kendi hızlarında eşzamansız olarak işlemesine olanak tanır.'
-    },
-    {
-      id: 9,
-      text: 'Performance optimization in web applications involves minimizing bundle sizes through code splitting and tree shaking, implementing lazy loading for routes and components, optimizing images with modern formats like WebP, utilizing browser caching strategies, and reducing the number of HTTP requests through resource bundling. Server-side rendering or static site generation can significantly improve initial page load times.',
-      reference: 'Web uygulamalarında performans optimizasyonu, kod bölme ve ağaç sallama yoluyla paket boyutlarını en aza indirmeyi, rotalar ve bileşenler için tembel yükleme uygulamayı, WebP gibi modern formatlarla görüntüleri optimize etmeyi, tarayıcı önbelleğe alma stratejilerini kullanmayı ve kaynak paketleme yoluyla HTTP istek sayısını azaltmayı içerir. Sunucu tarafı işleme veya statik site oluşturma, ilk sayfa yükleme sürelerini önemli ölçüde iyileştirebilir.'
-    },
-    {
-      id: 10,
-      text: 'Continuous integration and deployment pipelines automate the software delivery process by running automated tests, performing code quality checks, building artifacts, and deploying to various environments. The pipeline should include unit tests, integration tests, security scans, and performance benchmarks. Failed builds should trigger notifications, and successful deployments to production should only occur after passing all quality gates and receiving appropriate approvals.',
-      reference: 'Sürekli entegrasyon ve dağıtım hatları, otomatik testler çalıştırarak, kod kalitesi kontrolleri yaparak, yapılar oluşturarak ve çeşitli ortamlara dağıtarak yazılım teslimat sürecini otomatikleştirir. Hattın birim testlerini, entegrasyon testlerini, güvenlik taramalarını ve performans kıyaslamalarını içermesi gerekir. Başarısız derlemeler bildirimleri tetiklemeli ve üretime başarılı dağıtımlar yalnızca tüm kalite kapılarından geçtikten ve uygun onayları aldıktan sonra gerçekleşmelidir.'
-    },
-    {
-      id: 11,
-      text: 'Machine learning model deployment requires careful consideration of inference latency, throughput requirements, and resource constraints. Models can be served through REST APIs, gRPC services, or embedded directly in applications. Batch prediction is suitable for non-real-time scenarios, while online prediction with model caching and request batching optimizes latency for real-time applications. Model versioning and A/B testing capabilities are essential for safe production deployments.',
-      reference: 'Makine öğrenimi modeli dağıtımı, çıkarım gecikmesi, verim gereksinimleri ve kaynak kısıtlamalarının dikkatli bir şekilde değerlendirilmesini gerektirir. Modeller REST API\'leri, gRPC hizmetleri aracılığıyla sunulabilir veya doğrudan uygulamalara gömülebilir. Toplu tahmin, gerçek zamanlı olmayan senaryolar için uygundur, model önbelleğe alma ve istek toplu işleme ile çevrimiçi tahmin, gerçek zamanlı uygulamalar için gecikmeyi optimize eder. Model sürümleme ve A/B test yetenekleri, güvenli üretim dağıtımları için gereklidir.'
-    },
-    {
-      id: 12,
-      text: 'Cloud infrastructure management involves provisioning resources through infrastructure-as-code tools like Terraform or CloudFormation, implementing auto-scaling policies based on metrics like CPU utilization and request rates, configuring load balancers for traffic distribution, setting up monitoring and alerting systems, and establishing disaster recovery procedures with regular backup schedules and tested restoration processes.',
-      reference: 'Bulut altyapısı yönetimi, Terraform veya CloudFormation gibi kod olarak altyapı araçları aracılığıyla kaynakları sağlamayı, CPU kullanımı ve istek oranları gibi metriklere dayalı otomatik ölçeklendirme politikaları uygulamayı, trafik dağıtımı için yük dengeleyicileri yapılandırmayı, izleme ve uyarı sistemleri kurmayı ve düzenli yedekleme programları ve test edilmiş geri yükleme süreçleriyle felaket kurtarma prosedürleri oluşturmayı içerir.'
-    }
-  ]
-  
-  const [selectedExample, setSelectedExample] = useState(null)
-  
-  const loadExample = (example) => {
-    setText(example.text)
-    setReference(example.reference)
-    setSelectedExample(example.id)
-  }
-  
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold mb-8">Çeviri Karşılaştırma</h1>
@@ -186,27 +113,6 @@ function Compare() {
             className="input-field h-32 resize-none"
             placeholder="Çevirmek istediğiniz metni buraya yazın..."
           />
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            📚 Örnek Metinler (Seçin ve Test Edin)
-          </label>
-          <select
-            value={selectedExample || ''}
-            onChange={(e) => {
-              const example = exampleTexts.find(ex => ex.id === parseInt(e.target.value))
-              if (example) loadExample(example)
-            }}
-            className="input-field mb-2 text-sm"
-          >
-            <option value="">-- Uzun Yazılımsal Metin Seçin --</option>
-            {exampleTexts.map((example) => (
-              <option key={example.id} value={example.id}>
-                {example.title}: {example.text.substring(0, 100)}...
-              </option>
-            ))}
-          </select>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -329,8 +235,7 @@ function Compare() {
             const toolNames = {
               google: 'Google Translate',
               deepl: 'DeepL',
-              microsoft: 'Microsoft Translator',
-              amazon: 'Amazon Translate'
+              microsoft: 'Microsoft Translator'
             }
             
             const accuracy = (bestScore * 100).toFixed(1)
@@ -396,8 +301,7 @@ function Compare() {
             const toolNames = {
               google: 'Google Translate',
               deepl: 'DeepL',
-              microsoft: 'Microsoft Translator',
-              amazon: 'Amazon Translate'
+              microsoft: 'Microsoft Translator'
             }
             
             const medals = ['🥇', '🥈', '🥉', '🏅']
