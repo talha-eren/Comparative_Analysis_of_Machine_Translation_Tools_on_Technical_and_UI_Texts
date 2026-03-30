@@ -154,6 +154,8 @@ def translate():
     # Cevirileri yap
     translations = {}
     metrics = {}
+    back_translations = {}
+    metric_mode = 'reference' if reference else 'estimated_back_translation'
     time_taken = {}
     
     for translator_name in requested_translators:
@@ -162,28 +164,30 @@ def translate():
         
         translator = available_translators[translator_name]
         
+        translation = None
+        elapsed = 0
+
         # Cache kontrolu
         cached = cache.get(text, translator_name, source_lang, target_lang)
-        if cached:
-            translations[translator_name] = cached
-            time_taken[translator_name] = 0
-            continue
-        
-        # Ceviri yap
-        start_time = time.time()
         try:
-            translation = translator.translate(text, source_lang, target_lang)
-            elapsed = (time.time() - start_time) * 1000
-            
-            print(f"  [{translator_name}] Ceviri: {translation}")
-            
+            if cached:
+                translation = cached
+            else:
+                # Ceviri yap
+                start_time = time.time()
+                translation = translator.translate(text, source_lang, target_lang)
+                elapsed = (time.time() - start_time) * 1000
+
+                print(f"  [{translator_name}] Ceviri: {translation}")
+
             if translation:
                 translations[translator_name] = translation
                 time_taken[translator_name] = round(elapsed, 2)
-                
+
                 # Cache'e kaydet
-                cache.set(text, translation, translator_name, source_lang, target_lang)
-                
+                if not cached:
+                    cache.set(text, translation, translator_name, source_lang, target_lang)
+
                 # Metrik hesapla (referans varsa)
                 if reference:
                     metrics[translator_name] = {
@@ -192,6 +196,22 @@ def translate():
                         'ter': calculate_ter(translation, reference),
                         'chrf': calculate_chrf(translation, reference)
                     }
+                else:
+                    # Referans yoksa geri ceviri ile orijinal metne benzerlik hesapla
+                    back_translation = cache.get(translation, translator_name, target_lang, source_lang)
+                    if not back_translation:
+                        back_translation = translator.translate(translation, target_lang, source_lang)
+                        if back_translation:
+                            cache.set(translation, back_translation, translator_name, target_lang, source_lang)
+
+                    if back_translation:
+                        back_translations[translator_name] = back_translation
+                        metrics[translator_name] = {
+                            'bleu': calculate_bleu(back_translation, text),
+                            'meteor': calculate_meteor(back_translation, text),
+                            'ter': calculate_ter(back_translation, text),
+                            'chrf': calculate_chrf(back_translation, text)
+                        }
         except Exception as e:
             print(f"  [{translator_name}] Hata: {e}")
     
@@ -200,8 +220,10 @@ def translate():
         result_entry = {
             'source_text': text,
             'reference': reference,
+            'metric_mode': metric_mode,
             'category': category,
             'translations': translations,
+            'back_translations': back_translations if back_translations else None,
             'metrics': metrics,
             'timestamp': time.time()
         }
@@ -227,6 +249,8 @@ def translate():
     return jsonify({
         'translations': translations,
         'metrics': metrics if metrics else None,
+        'metric_mode': metric_mode if metrics else None,
+        'back_translations': back_translations if back_translations else None,
         'time_taken_ms': time_taken,
         'source_text': text,
         'source_lang': source_lang,
