@@ -11,6 +11,19 @@ except ImportError:
     DEEPL_AVAILABLE = False
     print("[!] deepl kurulu degil")
 
+def _deepl_lang_codes(source_lang: str, target_lang: str) -> tuple:
+    """
+    DeepL dil kodları (büyük harf). İngilizce hedef için EN-US kullan;
+    düz 'EN' hedefi bazı API yanıtlarında hata üretebiliyor (özellikle geri çeviri TR→EN).
+    Kaynakta EN genelde kabul edilir.
+    """
+    src = (source_lang or "en").upper()
+    tgt = (target_lang or "en").upper()
+    if tgt == "EN":
+        tgt = "EN-US"
+    return src, tgt
+
+
 class DeepLTranslator(BaseTranslator):
     """DeepL API wrapper sınıfı"""
     
@@ -62,10 +75,8 @@ class DeepLTranslator(BaseTranslator):
             return None
         
         try:
-            # DeepL dil kodları uppercase olmalı
-            source = source_lang.upper()
-            target = target_lang.upper()
-            
+            source, target = _deepl_lang_codes(source_lang, target_lang)
+
             result = self.translator.translate_text(
                 text,
                 source_lang=source,
@@ -95,10 +106,8 @@ class DeepLTranslator(BaseTranslator):
             return [None] * len(texts)
         
         try:
-            # DeepL dil kodları uppercase
-            source = source_lang.upper()
-            target = target_lang.upper()
-            
+            source, target = _deepl_lang_codes(source_lang, target_lang)
+
             # DeepL batch çeviri desteği
             results = self.translator.translate_text(
                 texts,
