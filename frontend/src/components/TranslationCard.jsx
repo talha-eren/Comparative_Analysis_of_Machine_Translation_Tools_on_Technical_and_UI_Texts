@@ -4,25 +4,25 @@ function TranslationCard({ tool, translation, metrics, timeTaken, isLoading }) {
     if (score >= 0.6) return 'text-warning-600'
     return 'text-error-600'
   }
-  
+
   const getScoreBgColor = (score) => {
     if (score >= 0.8) return 'bg-success-100'
     if (score >= 0.6) return 'bg-warning-100'
     return 'bg-error-100'
   }
-  
+
   const toolColors = {
     google: 'border-blue-500',
     deepl: 'border-indigo-500',
     microsoft: 'border-cyan-500'
   }
-  
+
   const toolNames = {
     google: 'Google Translate',
     deepl: 'DeepL',
     microsoft: 'Microsoft Translator'
   }
-  
+
   return (
     <div className={`card border-t-4 ${toolColors[tool] || 'border-gray-500'}`}>
       <div className="mb-4">
@@ -33,7 +33,7 @@ function TranslationCard({ tool, translation, metrics, timeTaken, isLoading }) {
           <p className="text-sm text-gray-500">{timeTaken}ms</p>
         )}
       </div>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center h-32">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -43,7 +43,7 @@ function TranslationCard({ tool, translation, metrics, timeTaken, isLoading }) {
           <div className="mb-4 p-4 bg-gray-50 rounded-lg min-h-[100px]">
             <p className="text-gray-800 whitespace-pre-wrap">{translation || 'Çeviri yapılamadı'}</p>
           </div>
-          
+
           {metrics && (
             <div className="space-y-2">
               <MetricBar label="BLEU" score={metrics.bleu} />
@@ -52,7 +52,7 @@ function TranslationCard({ tool, translation, metrics, timeTaken, isLoading }) {
               <MetricBar label="TER" score={metrics.ter} inverse={true} />
             </div>
           )}
-          
+
           {translation && (
             <button
               onClick={() => navigator.clipboard.writeText(translation)}
@@ -71,16 +71,16 @@ function MetricBar({ label, score, inverse = false }) {
   if (score === null || score === undefined) {
     return null
   }
-  
+
   const displayScore = inverse ? (1 - score) : score
   const percentage = displayScore * 100
-  
+
   const getColor = () => {
     if (displayScore >= 0.8) return 'bg-success-500'
     if (displayScore >= 0.6) return 'bg-warning-500'
     return 'bg-error-500'
   }
-  
+
   return (
     <div>
       <div className="flex justify-between text-sm mb-1">

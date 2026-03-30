@@ -10,18 +10,18 @@ function BatchTest() {
   const [jobId, setJobId] = useState(null)
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState(null)
-  
+
   useEffect(() => {
     loadDatasets()
   }, [])
-  
+
   useEffect(() => {
     if (jobId && isRunning) {
       const interval = setInterval(checkProgress, 2000)
       return () => clearInterval(interval)
     }
   }, [jobId, isRunning])
-  
+
   const loadDatasets = async () => {
     try {
       const data = await getDatasets()
@@ -30,15 +30,15 @@ function BatchTest() {
       console.error('Dataset\'ler yüklenemedi:', error)
     }
   }
-  
+
   const checkProgress = async () => {
     if (!jobId) return
-    
+
     try {
       const data = await getBatchStatus(jobId)
       setProgress(data.progress || 0)
       setStatus(data.status)
-      
+
       if (data.status === 'completed') {
         setIsRunning(false)
         alert('Toplu test tamamlandı! Sonuçlar sayfasına gidebilirsiniz.')
@@ -47,7 +47,7 @@ function BatchTest() {
       console.error('Durum kontrolü hatası:', error)
     }
   }
-  
+
   const handleToolToggle = (toolId) => {
     setSelectedTools(prev =>
       prev.includes(toolId)
@@ -55,23 +55,23 @@ function BatchTest() {
         : [...prev, toolId]
     )
   }
-  
+
   const handleStartTest = async () => {
     if (selectedTools.length === 0) {
       alert('Lütfen en az bir çeviri aracı seçin')
       return
     }
-    
+
     setIsRunning(true)
     setProgress(0)
-    
+
     try {
       const data = await startBatchTranslation(
         selectedDataset,
         selectedTools,
         sampleSize
       )
-      
+
       setJobId(data.job_id)
     } catch (error) {
       console.error('Test başlatma hatası:', error)
@@ -79,20 +79,20 @@ function BatchTest() {
       setIsRunning(false)
     }
   }
-  
+
   const tools = [
     { id: 'google', name: 'Google Translate' },
     { id: 'deepl', name: 'DeepL' },
     { id: 'microsoft', name: 'Microsoft Translator' }
   ]
-  
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold mb-8">Toplu Test</h1>
-      
+
       <div className="card mb-8">
         <h2 className="text-xl font-semibold mb-6">Test Ayarları</h2>
-        
+
         <div className="space-y-6">
           {/* Dataset Selection */}
           <div>
@@ -112,7 +112,7 @@ function BatchTest() {
               ))}
             </select>
           </div>
-          
+
           {/* Tools Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -133,7 +133,7 @@ function BatchTest() {
               ))}
             </div>
           </div>
-          
+
           {/* Sample Size */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -155,7 +155,7 @@ function BatchTest() {
               <span>10,000</span>
             </div>
           </div>
-          
+
           {/* Start Button */}
           <button
             onClick={handleStartTest}
@@ -166,12 +166,12 @@ function BatchTest() {
           </button>
         </div>
       </div>
-      
+
       {/* Progress */}
       {isRunning && (
         <div className="card">
           <h2 className="text-xl font-semibold mb-4">İlerleme</h2>
-          
+
           <div className="mb-4">
             <div className="flex justify-between text-sm mb-2">
               <span>Tamamlanan</span>
@@ -184,7 +184,7 @@ function BatchTest() {
               ></div>
             </div>
           </div>
-          
+
           <div className="text-sm text-gray-600">
             <p>Job ID: {jobId}</p>
             <p>Durum: {status || 'İşleniyor'}</p>
