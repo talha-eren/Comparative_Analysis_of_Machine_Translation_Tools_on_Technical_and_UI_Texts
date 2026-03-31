@@ -218,6 +218,7 @@ function Analytics() {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kaynak Metin</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Yön</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">En İyi Araç</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Skor</th>
                 </tr>
@@ -241,6 +242,7 @@ function Analytics() {
                           {sourceText || '-'}
                         </td>
                         <td className="px-4 py-2 text-sm text-gray-700">{getDirectionLabel(row)}</td>
+                        <td className="px-4 py-2 text-sm text-gray-700">{row.category || '-'}</td>
                         <td className="px-4 py-2 text-sm text-gray-700">{getToolName(row.best_translator || '-') || '-'}</td>
                         <td className="px-4 py-2 text-sm text-gray-700">
                           {row.best_score !== null && row.best_score !== undefined ? Number(row.best_score).toFixed(4) : '-'}
@@ -249,7 +251,7 @@ function Analytics() {
 
                       {isExpanded && (
                         <tr className="bg-blue-50">
-                          <td colSpan={5} className="px-4 py-4">
+                          <td colSpan={6} className="px-4 py-4">
                             <div className="space-y-4">
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <div className="bg-white rounded-lg border border-blue-100 p-4">
