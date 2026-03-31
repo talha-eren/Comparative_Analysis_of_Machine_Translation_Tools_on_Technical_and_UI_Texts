@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { getResultsSummary, getComparisons } from '../services/api'
 import BarChart from '../components/charts/BarChart'
 import RadarChart from '../components/charts/RadarChart'
@@ -7,6 +7,7 @@ function Analytics() {
   const [summary, setSummary] = useState(null)
   const [history, setHistory] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [expandedRowId, setExpandedRowId] = useState(null)
 
   useEffect(() => {
     loadSummary()
@@ -65,6 +66,39 @@ function Analytics() {
       data[tool] = scores[metric] || 0
     })
     return data
+  }
+
+  const getToolName = (tool) => {
+    if (tool === 'google') return 'Google Translate'
+    if (tool === 'deepl') return 'DeepL'
+    if (tool === 'microsoft') return 'Microsoft Translator'
+    return tool
+  }
+
+  const formatPercent = (value) => {
+    if (value === null || value === undefined) return '-'
+    return `${(Number(value) * 100).toFixed(1)}%`
+  }
+
+  const getDirectionLabel = (row) => {
+    const source = (row.source_lang || 'en').toUpperCase()
+    const target = (row.target_lang || 'tr').toUpperCase()
+    return `${source} -> ${target}`
+  }
+
+  const getSourceText = (row) => {
+    if ((row.source_lang || 'en').toLowerCase() === 'tr') {
+      return row.text_tr || row.reference_text || ''
+    }
+    return row.text_en || ''
+  }
+
+  const getReferenceText = (row) => {
+    if (row.reference_text) return row.reference_text
+    if ((row.target_lang || 'tr').toLowerCase() === 'en') {
+      return row.text_en || ''
+    }
+    return row.text_tr || ''
   }
 
   return (
@@ -167,27 +201,85 @@ function Analytics() {
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kaynak Metin</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Yön</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">En İyi Araç</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Skor</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {history.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm text-gray-700">
-                      {row.created_at ? new Date(row.created_at * 1000).toLocaleString('tr-TR') : '-'}
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-800 max-w-md truncate" title={row.text_en || ''}>
-                      {row.text_en || '-'}
-                    </td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{row.category || '-'}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{row.best_translator || '-'}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">
-                      {row.best_score !== null && row.best_score !== undefined ? Number(row.best_score).toFixed(4) : '-'}
-                    </td>
-                  </tr>
-                ))}
+                {history.map((row) => {
+                  const isExpanded = expandedRowId === row.id
+                  const sourceText = getSourceText(row)
+                  const referenceText = getReferenceText(row)
+
+                  return (
+                    <Fragment key={row.id}>
+                      <tr
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => setExpandedRowId(isExpanded ? null : row.id)}
+                      >
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {row.created_at ? new Date(row.created_at * 1000).toLocaleString('tr-TR') : '-'}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-800 max-w-md truncate" title={sourceText || ''}>
+                          {sourceText || '-'}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700">{getDirectionLabel(row)}</td>
+                        <td className="px-4 py-2 text-sm text-gray-700">{getToolName(row.best_translator || '-') || '-'}</td>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {row.best_score !== null && row.best_score !== undefined ? Number(row.best_score).toFixed(4) : '-'}
+                        </td>
+                      </tr>
+
+                      {isExpanded && (
+                        <tr className="bg-blue-50">
+                          <td colSpan={5} className="px-4 py-4">
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <div className="bg-white rounded-lg border border-blue-100 p-4">
+                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Kaynak Metin</div>
+                                  <p className="text-sm text-gray-800 whitespace-pre-wrap">{sourceText || '-'}</p>
+                                </div>
+                                <div className="bg-white rounded-lg border border-blue-100 p-4">
+                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Referans / Beklenen Çeviri</div>
+                                  <p className="text-sm text-gray-800 whitespace-pre-wrap">{referenceText || '-'}</p>
+                                </div>
+                              </div>
+
+                              <div className="bg-white rounded-lg border border-blue-100 p-4">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-3">Araç Bazlı Çeviri ve Skor Detayları</h3>
+                                <div className="space-y-3">
+                                  {Object.entries(row.translations || {}).map(([tool, translated]) => {
+                                    const metric = row.metrics?.[tool] || {}
+                                    return (
+                                      <div key={`${row.id}-${tool}`} className="rounded border border-gray-200 p-3">
+                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                          <div className="font-medium text-gray-900">{getToolName(tool)}</div>
+                                          <div className="text-xs text-gray-500">{getDirectionLabel(row)}</div>
+                                        </div>
+                                        <p className="text-sm text-gray-800 mb-3 whitespace-pre-wrap">{translated || '-'}</p>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                          <div className="bg-gray-50 rounded px-2 py-1">BLEU: <strong>{formatPercent(metric.bleu)}</strong></div>
+                                          <div className="bg-gray-50 rounded px-2 py-1">METEOR: <strong>{formatPercent(metric.meteor)}</strong></div>
+                                          <div className="bg-gray-50 rounded px-2 py-1">chrF++: <strong>{formatPercent(metric.chrf)}</strong></div>
+                                          <div className="bg-gray-50 rounded px-2 py-1">TER: <strong>{formatPercent(metric.ter)}</strong></div>
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+
+                                  {(!row.translations || Object.keys(row.translations).length === 0) && (
+                                    <p className="text-sm text-gray-600">Bu kayıt için araç bazlı çeviri detayı bulunamadı.</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  )
+                })}
               </tbody>
             </table>
           </div>

@@ -1,5 +1,7 @@
 """METEOR metriği hesaplama (NLTK kullanarak)"""
 
+import re
+import unicodedata
 from typing import Optional
 
 try:
@@ -19,6 +21,16 @@ except ImportError:
     NLTK_AVAILABLE = False
     print("⚠ nltk kurulu değil")
 
+
+def _normalize_for_eval(text: str) -> str:
+    """Turkce karakter, noktalama ve buyuk-kucuk harf farklarini normalize et."""
+    value = text or ""
+    value = unicodedata.normalize("NFKD", value)
+    value = "".join(ch for ch in value if not unicodedata.combining(ch))
+    value = value.casefold()
+    value = re.sub(r"[^\w\s]", " ", value, flags=re.UNICODE)
+    return " ".join(value.split())
+
 def calculate_meteor(hypothesis: str, reference: str) -> Optional[float]:
     """
     METEOR skoru hesapla
@@ -37,9 +49,12 @@ def calculate_meteor(hypothesis: str, reference: str) -> Optional[float]:
         return None
     
     try:
+        normalized_hypothesis = _normalize_for_eval(hypothesis)
+        normalized_reference = _normalize_for_eval(reference)
+
         # METEOR tokenization gerektirir
-        hypothesis_tokens = hypothesis.split()
-        reference_tokens = reference.split()
+        hypothesis_tokens = normalized_hypothesis.split()
+        reference_tokens = normalized_reference.split()
         
         # METEOR skoru hesapla
         score = meteor_score([reference_tokens], hypothesis_tokens)

@@ -1,5 +1,7 @@
 """BLEU, chrF++ ve TER metriklerini hesaplama (SacreBLEU kullanarak)"""
 
+import re
+import unicodedata
 from typing import Optional
 
 try:
@@ -16,6 +18,16 @@ def _is_short_text(hypothesis: str, reference: str) -> bool:
     ref_tokens = (reference or "").split()
     return min(len(hyp_tokens), len(ref_tokens)) <= 6
 
+
+def _normalize_for_eval(text: str) -> str:
+    """Turkce karakter, noktalama ve buyuk-kucuk harf farklarini normalize et."""
+    value = text or ""
+    value = unicodedata.normalize("NFKD", value)
+    value = "".join(ch for ch in value if not unicodedata.combining(ch))
+    value = value.casefold()
+    value = re.sub(r"[^\w\s]", " ", value, flags=re.UNICODE)
+    return " ".join(value.split())
+
 def calculate_bleu(hypothesis: str, reference: str) -> Optional[float]:
     """
     BLEU skoru hesapla
@@ -31,10 +43,13 @@ def calculate_bleu(hypothesis: str, reference: str) -> Optional[float]:
         return None
     
     try:
-        if _is_short_text(hypothesis, reference) and hasattr(sacrebleu, 'sentence_bleu'):
-            bleu = sacrebleu.sentence_bleu(hypothesis, [reference])
+        normalized_hypothesis = _normalize_for_eval(hypothesis)
+        normalized_reference = _normalize_for_eval(reference)
+
+        if _is_short_text(normalized_hypothesis, normalized_reference) and hasattr(sacrebleu, 'sentence_bleu'):
+            bleu = sacrebleu.sentence_bleu(normalized_hypothesis, [normalized_reference])
         else:
-            bleu = sacrebleu.corpus_bleu([hypothesis], [[reference]])
+            bleu = sacrebleu.corpus_bleu([normalized_hypothesis], [[normalized_reference]])
         return bleu.score / 100.0  # 0-1 arasına normalize et
         
     except Exception as e:
@@ -56,10 +71,13 @@ def calculate_chrf(hypothesis: str, reference: str) -> Optional[float]:
         return None
     
     try:
-        if _is_short_text(hypothesis, reference) and hasattr(sacrebleu, 'sentence_chrf'):
-            chrf = sacrebleu.sentence_chrf(hypothesis, [reference])
+        normalized_hypothesis = _normalize_for_eval(hypothesis)
+        normalized_reference = _normalize_for_eval(reference)
+
+        if _is_short_text(normalized_hypothesis, normalized_reference) and hasattr(sacrebleu, 'sentence_chrf'):
+            chrf = sacrebleu.sentence_chrf(normalized_hypothesis, [normalized_reference])
         else:
-            chrf = sacrebleu.corpus_chrf([hypothesis], [[reference]])
+            chrf = sacrebleu.corpus_chrf([normalized_hypothesis], [[normalized_reference]])
         return chrf.score / 100.0  # 0-1 arasına normalize et
         
     except Exception as e:
@@ -81,10 +99,13 @@ def calculate_ter(hypothesis: str, reference: str) -> Optional[float]:
         return None
     
     try:
-        if _is_short_text(hypothesis, reference) and hasattr(sacrebleu, 'sentence_ter'):
-            ter = sacrebleu.sentence_ter(hypothesis, [reference])
+        normalized_hypothesis = _normalize_for_eval(hypothesis)
+        normalized_reference = _normalize_for_eval(reference)
+
+        if _is_short_text(normalized_hypothesis, normalized_reference) and hasattr(sacrebleu, 'sentence_ter'):
+            ter = sacrebleu.sentence_ter(normalized_hypothesis, [normalized_reference])
         else:
-            ter = sacrebleu.corpus_ter([hypothesis], [[reference]])
+            ter = sacrebleu.corpus_ter([normalized_hypothesis], [[normalized_reference]])
         return ter.score / 100.0  # 0-1 arasına normalize et
         
     except Exception as e:

@@ -72,7 +72,8 @@ function Compare() {
         sourceLang,
         targetLang,
         selectedTools,
-        reference
+        reference,
+        category
       })
 
       const data = await translateText(
@@ -115,7 +116,7 @@ function Compare() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Kaynak Dil
@@ -141,6 +142,20 @@ function Compare() {
             >
               <option value="tr">Türkçe</option>
               <option value="en">İngilizce</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Kategori
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="input-field"
+            >
+              <option value="technical">Technical</option>
+              <option value="ui">UI</option>
             </select>
           </div>
         </div>
