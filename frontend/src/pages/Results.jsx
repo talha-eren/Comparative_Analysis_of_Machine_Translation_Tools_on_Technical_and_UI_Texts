@@ -9,11 +9,11 @@ function Results() {
   const [summary, setSummary] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedMetric, setSelectedMetric] = useState('bleu')
-  
+
   useEffect(() => {
     loadSummary()
   }, [])
-  
+
   const loadSummary = async () => {
     setIsLoading(true)
     try {
@@ -25,7 +25,7 @@ function Results() {
       setIsLoading(false)
     }
   }
-  
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -35,7 +35,7 @@ function Results() {
       </div>
     )
   }
-  
+
   if (!summary || !summary.average_scores) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -54,9 +54,9 @@ function Results() {
       </div>
     )
   }
-  
+
   const metrics = ['bleu', 'meteor', 'chrf', 'comet', 'ter']
-  
+
   const getMetricData = (metric) => {
     const data = {}
     Object.entries(summary.average_scores).forEach(([tool, scores]) => {
@@ -64,11 +64,11 @@ function Results() {
     })
     return data
   }
-  
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold mb-8">Sonuçlar ve Analiz</h1>
-      
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <StatCard
@@ -92,7 +92,7 @@ function Results() {
           icon="🔧"
         />
       </div>
-      
+
       {/* Metric Selector */}
       <div className="card mb-8">
         <h2 className="text-xl font-semibold mb-4">Metrik Seçimi</h2>
@@ -101,18 +101,17 @@ function Results() {
             <button
               key={metric}
               onClick={() => setSelectedMetric(metric)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedMetric === metric
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedMetric === metric
                   ? 'bg-primary-600 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+                }`}
             >
               {metric.toUpperCase()}
             </button>
           ))}
         </div>
       </div>
-      
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div className="card">
@@ -122,7 +121,7 @@ function Results() {
             metric={selectedMetric.toUpperCase()}
           />
         </div>
-        
+
         <div className="card">
           <RadarChart
             data={summary.average_scores}
@@ -130,11 +129,11 @@ function Results() {
           />
         </div>
       </div>
-      
+
       {/* Detailed Scores Table */}
       <div className="card">
         <h2 className="text-xl font-semibold mb-4">Detaylı Skorlar</h2>
-        
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -196,12 +195,12 @@ function Results() {
           </table>
         </div>
       </div>
-      
+
       {/* Category Breakdown */}
       {summary.category_breakdown && (
         <div className="card mt-8">
           <h2 className="text-xl font-semibold mb-4">Kategori Dağılımı</h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {Object.entries(summary.category_breakdown).map(([category, stats]) => (
               <div key={category} className="p-4 bg-gray-50 rounded-lg">
