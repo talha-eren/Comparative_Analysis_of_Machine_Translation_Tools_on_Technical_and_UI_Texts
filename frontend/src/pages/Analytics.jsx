@@ -115,8 +115,9 @@ function Analytics() {
               (scores.bleu || 0) +
               (scores.meteor || 0) +
               (scores.chrf || 0) +
+              (scores.comet || 0) +
               (1 - (scores.ter || 0))
-            ) / 4
+            ) / 5
             const accuracy = (avgScore * 100).toFixed(1)
 
             const toolName = tool === 'google' ? 'Google' :
@@ -147,6 +148,21 @@ function Analytics() {
             data={getMetricData('meteor')}
             title="METEOR Skorları (Yüksek = İyi)"
             metric="METEOR"
+          />
+          <BarChart
+            data={getMetricData('chrf')}
+            title="chrF++ Skorları (Yüksek = İyi)"
+            metric="chrF++"
+          />
+          <BarChart
+            data={getMetricData('ter')}
+            title="TER Skorları (Dusuk = Iyi)"
+            metric="TER"
+          />
+          <BarChart
+            data={getMetricData('comet')}
+            title="COMET Skorları (Yüksek = İyi)"
+            metric="COMET"
           />
         </div>
       </div>
@@ -182,7 +198,7 @@ function Analytics() {
             <p className="font-semibold text-purple-900 mb-1">📝 Değerlendirme</p>
             <p className="text-purple-800">
               Tüm çeviriler <strong>profesyonel referans çevirilerle</strong> karşılaştırıldı.
-              Skorlar BLEU, METEOR, chrF++ ve TER metriklerine göre hesaplandı.
+              Skorlar BLEU, METEOR, chrF++, COMET ve TER metriklerine göre hesaplandı.
             </p>
           </div>
         </div>
@@ -263,6 +279,7 @@ function Analytics() {
                                           <div className="bg-gray-50 rounded px-2 py-1">METEOR: <strong>{formatPercent(metric.meteor)}</strong></div>
                                           <div className="bg-gray-50 rounded px-2 py-1">chrF++: <strong>{formatPercent(metric.chrf)}</strong></div>
                                           <div className="bg-gray-50 rounded px-2 py-1">TER: <strong>{formatPercent(metric.ter)}</strong></div>
+                                          <div className="bg-gray-50 rounded px-2 py-1">COMET: <strong>{formatPercent(metric.comet)}</strong></div>
                                         </div>
                                       </div>
                                     )

@@ -28,7 +28,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from translators import GoogleTranslator, DeepLTranslator, MicrosoftTranslator
-from evaluators import calculate_bleu, calculate_meteor, calculate_ter, calculate_chrf
+from evaluators import calculate_bleu, calculate_meteor, calculate_ter, calculate_chrf, calculate_comet
 from utils import load_dataset, save_results, format_time
 
 def parse_args():
@@ -150,7 +150,8 @@ def run_experiment(segments, translators, category_filter=None):
                         'bleu': calculate_bleu(translation, reference),
                         'meteor': calculate_meteor(translation, reference),
                         'ter': calculate_ter(translation, reference),
-                        'chrf': calculate_chrf(translation, reference)
+                        'chrf': calculate_chrf(translation, reference),
+                        'comet': calculate_comet(source_text, translation, reference)
                     }
                     
                     # Maliyet hesapla
@@ -208,7 +209,7 @@ def calculate_experiment_summary(results, tool_names):
     }
     
     # Araç bazlı skorları topla
-    tool_scores = {tool: {'bleu': [], 'meteor': [], 'ter': [], 'chrf': []} 
+    tool_scores = {tool: {'bleu': [], 'meteor': [], 'ter': [], 'chrf': [], 'comet': []} 
                    for tool in tool_names}
     
     for result in results:
@@ -267,6 +268,7 @@ def print_summary(experiment_data):
         print(f"    METEOR: {scores.get('meteor', 0):.4f}")
         print(f"    chrF++: {scores.get('chrf', 0):.4f}")
         print(f"    TER:    {scores.get('ter', 0):.4f}")
+        print(f"    COMET:  {scores.get('comet', 0):.4f}")
         print(f"    Başarılı: {summary['successful_translations'][tool]}")
     
     print(f"\nKategori Dağılımı:")

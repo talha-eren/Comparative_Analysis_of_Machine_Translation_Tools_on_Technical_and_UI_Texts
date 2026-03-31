@@ -55,7 +55,7 @@ function Results() {
     )
   }
   
-  const metrics = ['bleu', 'meteor', 'chrf', 'ter']
+  const metrics = ['bleu', 'meteor', 'chrf', 'comet', 'ter']
   
   const getMetricData = (metric) => {
     const data = {}
@@ -154,6 +154,9 @@ function Results() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   TER
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  COMET
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -180,6 +183,11 @@ function Results() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={getScoreClass(1 - (scores.ter || 0))}>
                       {scores.ter?.toFixed(4) || '-'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={getScoreClass(scores.comet)}>
+                      {scores.comet?.toFixed(4) || '-'}
                     </span>
                   </td>
                 </tr>

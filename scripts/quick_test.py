@@ -22,6 +22,7 @@ load_dotenv(env_path)
 from backend.translators.deepl_translator import DeepLTranslator
 from backend.evaluators.bleu_scorer import calculate_bleu, calculate_chrf, calculate_ter
 from backend.evaluators.meteor_scorer import calculate_meteor
+from backend.evaluators.comet_scorer import calculate_comet
 
 # Test örnekleri
 TEST_CASES = [
@@ -92,12 +93,14 @@ def main():
                 chrf = calculate_chrf(translation, reference)
                 ter = calculate_ter(translation, reference)
                 meteor = calculate_meteor(translation, reference)
+                comet = calculate_comet(source, translation, reference)
                 
                 print(f"\nMetrikler:")
                 print(f"  BLEU:   {bleu:.3f}" if bleu else "  BLEU:   N/A")
                 print(f"  chrF++: {chrf:.3f}" if chrf else "  chrF++: N/A")
                 print(f"  TER:    {ter:.3f}" if ter else "  TER:    N/A")
                 print(f"  METEOR: {meteor:.3f}" if meteor else "  METEOR: N/A")
+                print(f"  COMET:  {comet:.3f}" if comet is not None else "  COMET:  N/A")
                 
                 # Kalite değerlendirmesi
                 if bleu and bleu > 0.5:

@@ -23,7 +23,8 @@ from evaluators import (
     calculate_bleu, 
     calculate_chrf, 
     calculate_ter, 
-    calculate_meteor
+    calculate_meteor,
+    calculate_comet
 )
 from data_processing import DatasetLoader
 from utils import Cache, load_dataset, save_results, format_time
@@ -260,7 +261,8 @@ def translate():
                         'bleu': calculate_bleu(translation, reference),
                         'meteor': calculate_meteor(translation, reference),
                         'ter': calculate_ter(translation, reference),
-                        'chrf': calculate_chrf(translation, reference)
+                        'chrf': calculate_chrf(translation, reference),
+                        'comet': calculate_comet(text, translation, reference)
                     }
                 else:
                     # Referans yoksa geri ceviri ile orijinal metne benzerlik hesapla
@@ -276,7 +278,8 @@ def translate():
                             'bleu': calculate_bleu(back_translation, text),
                             'meteor': calculate_meteor(back_translation, text),
                             'ter': calculate_ter(back_translation, text),
-                            'chrf': calculate_chrf(back_translation, text)
+                            'chrf': calculate_chrf(back_translation, text),
+                            'comet': None
                         }
                     else:
                         # Geri ceviri üretilemezse UI tarafında boş kalmaması için fallback
@@ -284,7 +287,8 @@ def translate():
                             'bleu': 0.0,
                             'meteor': 0.0,
                             'ter': 1.0,
-                            'chrf': 0.0
+                            'chrf': 0.0,
+                            'comet': None
                         }
         except Exception as e:
             print(f"  [{translator_name}] Hata: {e}")
@@ -432,7 +436,8 @@ def process_batch_job(job_id: str, segments: list, translator_names: list):
                     'bleu': calculate_bleu(translation, reference),
                     'meteor': calculate_meteor(translation, reference),
                     'ter': calculate_ter(translation, reference),
-                    'chrf': calculate_chrf(translation, reference)
+                    'chrf': calculate_chrf(translation, reference),
+                    'comet': calculate_comet(source_text, translation, reference)
                 }
         
         results.append(segment_result)
@@ -517,6 +522,7 @@ def evaluate():
     
     translation = data.get('translation', '').strip()
     reference = data.get('reference', '').strip()
+    source = data.get('source', '').strip()
     
     if not translation or not reference:
         return jsonify({'error': 'Ceviri ve referans gerekli'}), 400
@@ -525,7 +531,8 @@ def evaluate():
         'bleu': calculate_bleu(translation, reference),
         'meteor': calculate_meteor(translation, reference),
         'ter': calculate_ter(translation, reference),
-        'chrf': calculate_chrf(translation, reference)
+        'chrf': calculate_chrf(translation, reference),
+        'comet': calculate_comet(source, translation, reference)
     }
     
     return jsonify(metrics)
@@ -580,8 +587,8 @@ def calculate_summary_from_db(rows: list) -> dict:
                 if not isinstance(tool_metric, dict):
                     continue
                 if tool not in tool_scores:
-                    tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': []}
-                for metric_name in ('bleu', 'meteor', 'ter', 'chrf'):
+                    tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': [], 'comet': []}
+                for metric_name in ('bleu', 'meteor', 'ter', 'chrf', 'comet'):
                     val = tool_metric.get(metric_name)
                     if val is not None:
                         tool_scores[tool][metric_name].append(val)
@@ -596,7 +603,7 @@ def calculate_summary_from_db(rows: list) -> dict:
                 if bleu_val is None:
                     continue
                 if tool not in tool_scores:
-                    tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': []}
+                    tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': [], 'comet': []}
                 tool_scores[tool]['bleu'].append(bleu_val)
 
     average_scores = {}
@@ -651,7 +658,7 @@ def calculate_summary(results: list) -> dict:
     for result in results:
         for tool, metrics in result.get('metrics', {}).items():
             if tool not in tool_scores:
-                tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': []}
+                tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': [], 'comet': []}
             
             for metric, score in metrics.items():
                 if score is not None:

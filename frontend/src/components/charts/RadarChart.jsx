@@ -19,7 +19,7 @@ ChartJS.register(
 )
 
 function RadarChart({ data, title }) {
-  const metrics = ['BLEU', 'METEOR', 'chrF++', 'TER (inv)']
+  const metrics = ['BLEU', 'METEOR', 'chrF++', 'COMET', 'TER (inv)']
   const tools = Object.keys(data)
   
   const datasets = tools.map((tool, index) => {
@@ -43,6 +43,7 @@ function RadarChart({ data, title }) {
         data[tool].bleu || 0,
         data[tool].meteor || 0,
         data[tool].chrf || 0,
+        data[tool].comet || 0,
         1 - (data[tool].ter || 0)
       ],
       backgroundColor: colors[index % colors.length],

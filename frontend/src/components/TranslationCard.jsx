@@ -49,6 +49,7 @@ function TranslationCard({ tool, translation, metrics, timeTaken, isLoading }) {
               <MetricBar label="BLEU" score={metrics.bleu} />
               <MetricBar label="METEOR" score={metrics.meteor} />
               <MetricBar label="chrF++" score={metrics.chrf} />
+              <MetricBar label="COMET" score={metrics.comet} />
               <MetricBar label="TER" score={metrics.ter} inverse={true} />
             </div>
           )}

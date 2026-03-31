@@ -23,6 +23,17 @@ function Compare() {
   })
   const [loadingStage, setLoadingStage] = useState('')
 
+  const calculateAccuracy = (metrics) => {
+    if (!metrics) return -1
+    const total =
+      (metrics.bleu || 0) +
+      (metrics.meteor || 0) +
+      (metrics.chrf || 0) +
+      (metrics.comet || 0) +
+      (1 - (metrics.ter || 0))
+    return total / 5
+  }
+
   // Sonuclari localStorage'a kaydet
   useEffect(() => {
     if (results) {
@@ -234,12 +245,7 @@ function Compare() {
             let bestScore = -1
 
             Object.entries(results.metrics).forEach(([tool, metrics]) => {
-              const avgScore = (
-                (metrics.bleu || 0) +
-                (metrics.meteor || 0) +
-                (metrics.chrf || 0) +
-                (1 - (metrics.ter || 0))
-              ) / 4
+              const avgScore = calculateAccuracy(metrics)
 
               if (avgScore > bestScore) {
                 bestScore = avgScore
@@ -296,19 +302,13 @@ function Compare() {
           {results && results.metrics && Object.keys(results.metrics).length > 0 && (() => {
             // Araçları doğruluk oranına göre sırala
             const sortedTools = [...selectedTools].sort((a, b) => {
-              const scoreA = results.metrics[a] ? (
-                (results.metrics[a].bleu || 0) +
-                (results.metrics[a].meteor || 0) +
-                (results.metrics[a].chrf || 0) +
-                (1 - (results.metrics[a].ter || 0))
-              ) / 4 : -1
+              const scoreA = results.metrics[a]
+                ? calculateAccuracy(results.metrics[a])
+                : -1
 
-              const scoreB = results.metrics[b] ? (
-                (results.metrics[b].bleu || 0) +
-                (results.metrics[b].meteor || 0) +
-                (results.metrics[b].chrf || 0) +
-                (1 - (results.metrics[b].ter || 0))
-              ) / 4 : -1
+              const scoreB = results.metrics[b]
+                ? calculateAccuracy(results.metrics[b])
+                : -1
 
               return scoreB - scoreA
             })
@@ -331,12 +331,7 @@ function Compare() {
                     if (!metrics) return null
 
                     // Ortalama doğruluk hesapla
-                    const avgScore = (
-                      (metrics.bleu || 0) +
-                      (metrics.meteor || 0) +
-                      (metrics.chrf || 0) +
-                      (1 - (metrics.ter || 0))
-                    ) / 4
+                    const avgScore = calculateAccuracy(metrics)
                     const accuracy = (avgScore * 100).toFixed(1)
 
                     return (
@@ -371,19 +366,13 @@ function Compare() {
             // Araçları doğruluk oranına göre sırala
             const sortedTools = results.metrics && Object.keys(results.metrics).length > 0
               ? [...selectedTools].sort((a, b) => {
-                const scoreA = results.metrics[a] ? (
-                  (results.metrics[a].bleu || 0) +
-                  (results.metrics[a].meteor || 0) +
-                  (results.metrics[a].chrf || 0) +
-                  (1 - (results.metrics[a].ter || 0))
-                ) / 4 : -1
+                const scoreA = results.metrics[a]
+                  ? calculateAccuracy(results.metrics[a])
+                  : -1
 
-                const scoreB = results.metrics[b] ? (
-                  (results.metrics[b].bleu || 0) +
-                  (results.metrics[b].meteor || 0) +
-                  (results.metrics[b].chrf || 0) +
-                  (1 - (results.metrics[b].ter || 0))
-                ) / 4 : -1
+                const scoreB = results.metrics[b]
+                  ? calculateAccuracy(results.metrics[b])
+                  : -1
 
                 return scoreB - scoreA
               })
