@@ -192,10 +192,10 @@ function Analytics() {
     .sort((a, b) => {
       const aIndex = categoryOrder.indexOf(a)
       const bIndex = categoryOrder.indexOf(b)
-    if (aIndex === -1 && bIndex === -1) return a.localeCompare(b)
-    if (aIndex === -1) return 1
-    if (bIndex === -1) return -1
-    return aIndex - bIndex
+      if (aIndex === -1 && bIndex === -1) return a.localeCompare(b)
+      if (aIndex === -1) return 1
+      if (bIndex === -1) return -1
+      return aIndex - bIndex
     })
 
   return (
@@ -227,7 +227,8 @@ function Analytics() {
                   <div className="text-5xl font-bold text-blue-600 mb-2">{accuracy}%</div>
                   <div className="text-xs text-gray-500">Average Accuracy</div>
                 </div>
-              )}
+              )
+            }
             )}
           </div>
         </div>
@@ -398,8 +399,8 @@ function Analytics() {
                   key={`page-${page}`}
                   onClick={() => setCurrentPage(page)}
                   className={`h-9 w-9 rounded-lg border text-sm font-semibold transition-colors ${currentPage === page
-                      ? 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
+                    ? 'bg-primary-600 text-white border-primary-600'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
                     }`}
                 >
                   {page}

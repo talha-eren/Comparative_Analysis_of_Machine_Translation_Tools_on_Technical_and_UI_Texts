@@ -5,11 +5,11 @@ function DatasetExplorer() {
   const [datasets, setDatasets] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedDataset, setSelectedDataset] = useState(null)
-  
+
   useEffect(() => {
     loadDatasets()
   }, [])
-  
+
   const loadDatasets = async () => {
     setIsLoading(true)
     try {
@@ -21,7 +21,7 @@ function DatasetExplorer() {
       setIsLoading(false)
     }
   }
-  
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -31,7 +31,7 @@ function DatasetExplorer() {
       </div>
     )
   }
-  
+
   if (!datasets || !datasets.datasets) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -42,16 +42,16 @@ function DatasetExplorer() {
       </div>
     )
   }
-  
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold mb-8">Dataset Explorer</h1>
-      
+
       {/* Dataset List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {datasets.datasets.map(datasetName => {
           const stats = datasets.statistics?.[datasetName]
-          
+
           return (
             <div
               key={datasetName}
@@ -61,7 +61,7 @@ function DatasetExplorer() {
               <h3 className="text-xl font-semibold mb-2 capitalize">
                 {datasetName.replace('_', ' ')}
               </h3>
-              
+
               {stats && (
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -72,7 +72,7 @@ function DatasetExplorer() {
                     <span className="text-gray-600">Average Length:</span>
                     <span className="font-semibold">{stats.avg_length?.toFixed(1)} chars</span>
                   </div>
-                  
+
                   {stats.categories && (
                     <div className="mt-3 pt-3 border-t">
                       <p className="text-gray-600 mb-2">Categories:</p>
@@ -86,7 +86,7 @@ function DatasetExplorer() {
                   )}
                 </div>
               )}
-              
+
               <button className="mt-4 w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
                 View
               </button>
@@ -94,12 +94,12 @@ function DatasetExplorer() {
           )
         })}
       </div>
-      
+
       {/* Dataset Statistics */}
       {datasets.statistics && (
         <div className="card">
           <h2 className="text-xl font-semibold mb-4">Overall Statistics</h2>
-          
+
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">

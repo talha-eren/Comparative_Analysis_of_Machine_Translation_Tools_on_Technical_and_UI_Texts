@@ -81,10 +81,10 @@ function Results() {
     .sort((a, b) => {
       const aIndex = categoryOrder.indexOf(a)
       const bIndex = categoryOrder.indexOf(b)
-    if (aIndex === -1 && bIndex === -1) return a.localeCompare(b)
-    if (aIndex === -1) return 1
-    if (bIndex === -1) return -1
-    return aIndex - bIndex
+      if (aIndex === -1 && bIndex === -1) return a.localeCompare(b)
+      if (aIndex === -1) return 1
+      if (bIndex === -1) return -1
+      return aIndex - bIndex
     })
 
   return (
@@ -127,8 +127,8 @@ function Results() {
                 key={metric}
                 onClick={() => setSelectedMetric(metric)}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedMetric === metric
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
               >
                 {metric.toUpperCase()}
