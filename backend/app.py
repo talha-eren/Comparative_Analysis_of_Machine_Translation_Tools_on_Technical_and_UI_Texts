@@ -28,7 +28,7 @@ from evaluators import (
 )
 from data_processing import DatasetLoader
 from utils import Cache, load_dataset, save_results, format_time
-from compare_db import init_db, save_comparison, list_comparisons
+from compare_db import init_db, save_comparison, list_comparisons, count_comparisons
 
 # .env dosyasını yükle
 load_dotenv()
@@ -575,23 +575,52 @@ def calculate_summary_from_db(rows: list) -> dict:
         return {}
 
     tool_scores = {}
+    category_tool_scores = {}
     category_breakdown = {}
 
+    def _ensure_tool(tool_scores_map: dict, tool: str) -> None:
+        if tool not in tool_scores_map:
+            tool_scores_map[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': [], 'comet': []}
+
+    def _add_metrics(tool_scores_map: dict, tool: str, tool_metric: dict) -> None:
+        _ensure_tool(tool_scores_map, tool)
+        for metric_name in ('bleu', 'meteor', 'ter', 'chrf', 'comet'):
+            val = tool_metric.get(metric_name)
+            if val is not None:
+                tool_scores_map[tool][metric_name].append(val)
+
+    def _compute_averages(tool_scores_map: dict) -> dict:
+        averages = {}
+        for tool, metrics in tool_scores_map.items():
+            averages[tool] = {}
+            for metric_name, values in metrics.items():
+                if values:
+                    averages[tool][metric_name] = round(sum(values) / len(values), 4)
+        return averages
+
+    def _pick_best_by_bleu(average_scores: dict) -> tuple:
+        best_tool = None
+        best_bleu = 0
+        for tool, scores in average_scores.items():
+            if scores.get('bleu', 0) > best_bleu:
+                best_bleu = scores['bleu']
+                best_tool = tool
+        return best_tool, best_bleu
+
     for row in rows:
-        category = row.get('category') or 'unknown'
+        raw_category = row.get('category')
+        category = (raw_category or 'unknown').strip().lower()
         category_breakdown[category] = category_breakdown.get(category, 0) + 1
+        if category not in category_tool_scores:
+            category_tool_scores[category] = {}
 
         metrics = row.get('metrics')
         if isinstance(metrics, dict):
             for tool, tool_metric in metrics.items():
                 if not isinstance(tool_metric, dict):
                     continue
-                if tool not in tool_scores:
-                    tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': [], 'comet': []}
-                for metric_name in ('bleu', 'meteor', 'ter', 'chrf', 'comet'):
-                    val = tool_metric.get(metric_name)
-                    if val is not None:
-                        tool_scores[tool][metric_name].append(val)
+                _add_metrics(tool_scores, tool, tool_metric)
+                _add_metrics(category_tool_scores[category], tool, tool_metric)
         else:
             # Eski kayitlar: yalnizca BLEU kolonlari
             legacy_map = {
@@ -602,23 +631,13 @@ def calculate_summary_from_db(rows: list) -> dict:
             for tool, bleu_val in legacy_map.items():
                 if bleu_val is None:
                     continue
-                if tool not in tool_scores:
-                    tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': [], 'comet': []}
+                _ensure_tool(tool_scores, tool)
                 tool_scores[tool]['bleu'].append(bleu_val)
+                _ensure_tool(category_tool_scores[category], tool)
+                category_tool_scores[category]['bleu'].append(bleu_val)
 
-    average_scores = {}
-    for tool, metrics in tool_scores.items():
-        average_scores[tool] = {}
-        for metric_name, values in metrics.items():
-            if values:
-                average_scores[tool][metric_name] = round(sum(values) / len(values), 4)
-
-    best_tool = None
-    best_bleu = 0
-    for tool, scores in average_scores.items():
-        if scores.get('bleu', 0) > best_bleu:
-            best_bleu = scores['bleu']
-            best_tool = tool
+    average_scores = _compute_averages(tool_scores)
+    best_tool, best_bleu = _pick_best_by_bleu(average_scores)
 
     total = len(rows)
     category_pct = {
@@ -629,12 +648,25 @@ def calculate_summary_from_db(rows: list) -> dict:
         for cat, count in category_breakdown.items()
     }
 
+    category_scores = {}
+    for category, tool_score_map in category_tool_scores.items():
+        averages = _compute_averages(tool_score_map)
+        cat_best_tool, cat_best_bleu = _pick_best_by_bleu(averages)
+        category_scores[category] = {
+            'total_translations': category_breakdown.get(category, 0),
+            'average_scores': averages,
+            'best_tool': cat_best_tool,
+            'best_bleu_score': cat_best_bleu,
+            'available_tools': list(averages.keys())
+        }
+
     return {
         'total_translations': total,
         'average_scores': average_scores,
         'best_tool': best_tool,
         'best_bleu_score': best_bleu,
         'category_breakdown': category_pct,
+        'category_scores': category_scores,
         'available_tools': list(average_scores.keys()),
         'data_source': 'sqlite',
     }
@@ -654,15 +686,22 @@ def calculate_summary(results: list) -> dict:
     
     # Arac bazli skorlari topla
     tool_scores = {}
+    category_tool_scores = {}
     
     for result in results:
+        category = result.get('category', 'unknown')
+        if category not in category_tool_scores:
+            category_tool_scores[category] = {}
         for tool, metrics in result.get('metrics', {}).items():
             if tool not in tool_scores:
                 tool_scores[tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': [], 'comet': []}
+            if tool not in category_tool_scores[category]:
+                category_tool_scores[category][tool] = {'bleu': [], 'meteor': [], 'ter': [], 'chrf': [], 'comet': []}
             
             for metric, score in metrics.items():
                 if score is not None:
                     tool_scores[tool][metric].append(score)
+                    category_tool_scores[category][tool][metric].append(score)
     
     # Ortalama skorlari hesapla
     average_scores = {}
@@ -684,13 +723,40 @@ def calculate_summary(results: list) -> dict:
     
     # Kategori bazli analiz
     category_breakdown = {}
-    categories = set(r.get('category', 'unknown') for r in results)
+    categories = set((r.get('category') or 'unknown').strip().lower() for r in results)
     
     for category in categories:
-        cat_results = [r for r in results if r.get('category') == category]
+        cat_results = [
+            r for r in results
+            if (r.get('category') or 'unknown').strip().lower() == category
+        ]
         category_breakdown[category] = {
             'count': len(cat_results),
             'percentage': round(len(cat_results) / len(results) * 100, 1)
+        }
+
+    category_scores = {}
+    for category, tool_score_map in category_tool_scores.items():
+        averages = {}
+        for tool, metrics in tool_score_map.items():
+            averages[tool] = {}
+            for metric, scores in metrics.items():
+                if scores:
+                    averages[tool][metric] = round(sum(scores) / len(scores), 4)
+
+        cat_best_tool = None
+        cat_best_bleu = 0
+        for tool, scores in averages.items():
+            if scores.get('bleu', 0) > cat_best_bleu:
+                cat_best_bleu = scores['bleu']
+                cat_best_tool = tool
+
+        category_scores[category] = {
+            'total_translations': category_breakdown.get(category, {}).get('count', 0),
+            'average_scores': averages,
+            'best_tool': cat_best_tool,
+            'best_bleu_score': cat_best_bleu,
+            'available_tools': list(averages.keys())
         }
     
     return {
@@ -699,6 +765,7 @@ def calculate_summary(results: list) -> dict:
         'best_tool': best_tool,
         'best_bleu_score': best_bleu,
         'category_breakdown': category_breakdown,
+        'category_scores': category_scores,
         'available_tools': list(average_scores.keys())
     }
 
@@ -711,7 +778,8 @@ def get_comparisons():
     except ValueError:
         return jsonify({"error": "limit ve offset sayi olmali"}), 400
     rows = list_comparisons(limit=limit, offset=offset)
-    return jsonify({"count": len(rows), "records": rows})
+    total = count_comparisons()
+    return jsonify({"count": len(rows), "total": total, "records": rows})
 
 
 @app.route('/api/cache/stats', methods=['GET'])

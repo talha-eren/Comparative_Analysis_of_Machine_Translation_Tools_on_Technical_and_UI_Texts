@@ -27,7 +27,7 @@ function BatchTest() {
       const data = await getDatasets()
       setDatasets(data.datasets || [])
     } catch (error) {
-      console.error('Dataset\'ler yüklenemedi:', error)
+      console.error('Datasets could not be loaded:', error)
     }
   }
 
@@ -41,10 +41,10 @@ function BatchTest() {
 
       if (data.status === 'completed') {
         setIsRunning(false)
-        alert('Toplu test tamamlandı! Sonuçlar sayfasına gidebilirsiniz.')
+        alert('Batch test complete! You can go to the results page.')
       }
     } catch (error) {
-      console.error('Durum kontrolü hatası:', error)
+      console.error('Status check failed:', error)
     }
   }
 
@@ -58,7 +58,7 @@ function BatchTest() {
 
   const handleStartTest = async () => {
     if (selectedTools.length === 0) {
-      alert('Lütfen en az bir çeviri aracı seçin')
+      alert('Please select at least one translator')
       return
     }
 
@@ -74,8 +74,8 @@ function BatchTest() {
 
       setJobId(data.job_id)
     } catch (error) {
-      console.error('Test başlatma hatası:', error)
-      alert('Test başlatılamadı')
+      console.error('Failed to start test:', error)
+      alert('Could not start the test')
       setIsRunning(false)
     }
   }
@@ -88,16 +88,16 @@ function BatchTest() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold mb-8">Toplu Test</h1>
+      <h1 className="text-3xl font-bold mb-8">Batch Test</h1>
 
       <div className="card mb-8">
-        <h2 className="text-xl font-semibold mb-6">Test Ayarları</h2>
+        <h2 className="text-xl font-semibold mb-6">Test Settings</h2>
 
         <div className="space-y-6">
           {/* Dataset Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Dataset Seçimi
+              Dataset Selection
             </label>
             <select
               value={selectedDataset}
@@ -116,7 +116,7 @@ function BatchTest() {
           {/* Tools Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Çeviri Araçları
+              Translators
             </label>
             <div className="grid grid-cols-2 gap-3">
               {tools.map(tool => (
@@ -137,7 +137,7 @@ function BatchTest() {
           {/* Sample Size */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Örnek Sayısı: {sampleSize}
+              Sample Size: {sampleSize}
             </label>
             <input
               type="range"
@@ -162,7 +162,7 @@ function BatchTest() {
             disabled={isRunning}
             className="btn-primary w-full py-3 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isRunning ? 'Test Çalışıyor...' : 'Testi Başlat'}
+            {isRunning ? 'Test Running...' : 'Start Test'}
           </button>
         </div>
       </div>
@@ -170,11 +170,11 @@ function BatchTest() {
       {/* Progress */}
       {isRunning && (
         <div className="card">
-          <h2 className="text-xl font-semibold mb-4">İlerleme</h2>
+          <h2 className="text-xl font-semibold mb-4">Progress</h2>
 
           <div className="mb-4">
             <div className="flex justify-between text-sm mb-2">
-              <span>Tamamlanan</span>
+              <span>Completed</span>
               <span className="font-semibold">{progress.toFixed(1)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-4">
@@ -187,9 +187,9 @@ function BatchTest() {
 
           <div className="text-sm text-gray-600">
             <p>Job ID: {jobId}</p>
-            <p>Durum: {status || 'İşleniyor'}</p>
-            <p>Seçilen araçlar: {selectedTools.join(', ')}</p>
-            <p>Örnek sayısı: {sampleSize}</p>
+            <p>Status: {status || 'Processing'}</p>
+            <p>Selected tools: {selectedTools.join(', ')}</p>
+            <p>Sample size: {sampleSize}</p>
           </div>
         </div>
       )}

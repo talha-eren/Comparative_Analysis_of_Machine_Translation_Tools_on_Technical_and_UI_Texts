@@ -7,25 +7,64 @@ function Analytics() {
   const [summary, setSummary] = useState(null)
   const [history, setHistory] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false)
   const [expandedRowId, setExpandedRowId] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const pageSize = 25
+  const totalPages = Math.ceil(totalCount / pageSize)
+  const getVisiblePages = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1)
+    }
+
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, 'ellipsis', totalPages]
+    }
+
+    if (currentPage >= totalPages - 3) {
+      return [1, 'ellipsis', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages]
+    }
+
+    return [1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages]
+  }
 
   useEffect(() => {
     loadSummary()
   }, [])
 
+  useEffect(() => {
+    loadHistory(currentPage)
+  }, [currentPage])
+
   const loadSummary = async () => {
     setIsLoading(true)
     try {
-      const [summaryData, historyData] = await Promise.all([
-        getResultsSummary(),
-        getComparisons(100, 0)
-      ])
+      const summaryData = await getResultsSummary()
       setSummary(summaryData)
-      setHistory(historyData.records || [])
     } catch (error) {
-      console.error('Analiz verileri yüklenemedi:', error)
+      console.error('Analytics data could not be loaded:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadHistory = async (page) => {
+    setIsHistoryLoading(true)
+    try {
+      const offset = (page - 1) * pageSize
+      const historyData = await getComparisons(pageSize, offset)
+      setHistory(historyData.records || [])
+      setTotalCount(historyData.total || 0)
+      setExpandedRowId(null)
+      const nextTotalPages = Math.ceil((historyData.total || 0) / pageSize)
+      if (nextTotalPages > 0 && page > nextTotalPages) {
+        setCurrentPage(nextTotalPages)
+      }
+    } catch (error) {
+      console.error('Past translations could not be loaded:', error)
+    } finally {
+      setIsHistoryLoading(false)
     }
   }
 
@@ -42,30 +81,34 @@ function Analytics() {
   if (!summary || !summary.average_scores || Object.keys(summary.average_scores).length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-8">Sonuçlar ve Analiz</h1>
+        <h1 className="text-3xl font-bold mb-8">Results & Analysis</h1>
         <div className="card text-center py-16 bg-gradient-to-br from-blue-50 to-indigo-50">
           <div className="text-6xl mb-6">📊</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Henüz Test Sonucu Yok</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">No Test Results Yet</h2>
           <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">
-            Analiz görebilmek için önce "Karşılaştır" sayfasından çeviri testleri yapmanız gerekiyor.
+            Run translation tests on the Compare page to see analytics.
           </p>
           <a
             href="/compare"
             className="inline-block px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
           >
-            Çeviri Testine Başla
+            Start Translation Test
           </a>
         </div>
       </div>
     )
   }
 
-  const getMetricData = (metric) => {
+  const getMetricDataFromScores = (scoresByTool, metric) => {
     const data = {}
-    Object.entries(summary.average_scores).forEach(([tool, scores]) => {
+    Object.entries(scoresByTool || {}).forEach(([tool, scores]) => {
       data[tool] = scores[metric] || 0
     })
     return data
+  }
+
+  const getMetricData = (metric) => {
+    return getMetricDataFromScores(summary.average_scores, metric)
   }
 
   const getToolName = (tool) => {
@@ -78,6 +121,42 @@ function Analytics() {
   const formatPercent = (value) => {
     if (value === null || value === undefined) return '-'
     return `${(Number(value) * 100).toFixed(1)}%`
+  }
+
+  const calculateAccuracy = (metrics) => {
+    if (!metrics) return null
+    const total =
+      (metrics.bleu || 0) +
+      (metrics.meteor || 0) +
+      (metrics.chrf || 0) +
+      (metrics.comet || 0) +
+      (1 - (metrics.ter || 0))
+    return total / 5
+  }
+
+  const getBestToolFromRow = (row) => {
+    if (!row?.metrics || Object.keys(row.metrics).length === 0) {
+      return {
+        tool: row?.best_translator || null,
+        score: row?.best_score ?? null
+      }
+    }
+
+    let bestTool = null
+    let bestScore = -1
+
+    Object.entries(row.metrics).forEach(([tool, metrics]) => {
+      const score = calculateAccuracy(metrics)
+      if (score !== null && score > bestScore) {
+        bestScore = score
+        bestTool = tool
+      }
+    })
+
+    return {
+      tool: bestTool,
+      score: bestScore >= 0 ? bestScore : null
+    }
   }
 
   const getDirectionLabel = (row) => {
@@ -101,104 +180,200 @@ function Analytics() {
     return row.text_tr || ''
   }
 
+  const categoryLabels = {
+    technical: 'Technical',
+    ui: 'UI'
+  }
+
+  const categoryOrder = ['technical', 'ui']
+
+  const categoryKeys = Object.keys(summary.category_breakdown || {})
+    .filter((category) => summary.category_scores?.[category])
+    .sort((a, b) => {
+      const aIndex = categoryOrder.indexOf(a)
+      const bIndex = categoryOrder.indexOf(b)
+    if (aIndex === -1 && bIndex === -1) return a.localeCompare(b)
+    if (aIndex === -1) return 1
+    if (bIndex === -1) return -1
+    return aIndex - bIndex
+    })
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold mb-8">Sonuçlar ve Analiz</h1>
+      <h1 className="text-3xl font-bold mb-8">Results & Analysis</h1>
 
-      {/* Doğruluk Özeti */}
-      <div className="card mb-8 bg-gradient-to-r from-blue-50 to-purple-50">
-        <h2 className="text-2xl font-semibold mb-6">📊 Genel Doğruluk Oranları</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {Object.entries(summary.average_scores || {}).map(([tool, scores]) => {
-            // Ortalama doğruluk hesapla
-            const avgScore = (
-              (scores.bleu || 0) +
-              (scores.meteor || 0) +
-              (scores.chrf || 0) +
-              (scores.comet || 0) +
-              (1 - (scores.ter || 0))
-            ) / 5
-            const accuracy = (avgScore * 100).toFixed(1)
+      {/* Doğruluk Özeti (birden fazla kategori varsa) */}
+      {categoryKeys.length > 1 && (
+        <div className="card mb-8 bg-gradient-to-r from-blue-50 to-purple-50">
+          <h2 className="text-2xl font-semibold mb-6">📊 Overall Accuracy Rates</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {Object.entries(summary.average_scores || {}).map(([tool, scores]) => {
+              const avgScore = (
+                (scores.bleu || 0) +
+                (scores.meteor || 0) +
+                (scores.chrf || 0) +
+                (scores.comet || 0) +
+                (1 - (scores.ter || 0))
+              ) / 5
+              const accuracy = (avgScore * 100).toFixed(1)
 
-            const toolName = tool === 'google' ? 'Google' :
-              tool === 'deepl' ? 'DeepL' :
-                tool === 'microsoft' ? 'Microsoft' : tool
+              const toolName = tool === 'google' ? 'Google' :
+                tool === 'deepl' ? 'DeepL' :
+                  tool === 'microsoft' ? 'Microsoft' : tool
+
+              return (
+                <div key={tool} className="text-center p-6 bg-white rounded-lg shadow">
+                  <div className="text-sm text-gray-600 mb-2">{toolName}</div>
+                  <div className="text-5xl font-bold text-blue-600 mb-2">{accuracy}%</div>
+                  <div className="text-xs text-gray-500">Average Accuracy</div>
+                </div>
+              )}
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Detaylı Metrikler (birden fazla kategori varsa) */}
+      {categoryKeys.length > 1 && (
+        <div className="card mb-8">
+          <h2 className="text-xl font-semibold mb-6">📈 Detailed Metric Scores</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <BarChart
+              data={getMetricData('bleu')}
+              title="BLEU Scores (Higher = Better)"
+              metric="BLEU"
+            />
+            <BarChart
+              data={getMetricData('meteor')}
+              title="METEOR Scores (Higher = Better)"
+              metric="METEOR"
+            />
+            <BarChart
+              data={getMetricData('chrf')}
+              title="chrF++ Scores (Higher = Better)"
+              metric="chrF++"
+            />
+            <BarChart
+              data={getMetricData('ter')}
+              title="TER Scores (Lower = Better)"
+              metric="TER"
+            />
+            <BarChart
+              data={getMetricData('comet')}
+              title="COMET Scores (Higher = Better)"
+              metric="COMET"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Çok Boyutlu Karşılaştırma (birden fazla kategori varsa) */}
+      {categoryKeys.length > 1 && (
+        <div className="card mb-8">
+          <RadarChart
+            data={summary.average_scores}
+            title="Multi-Dimensional Performance Comparison"
+          />
+        </div>
+      )}
+
+      {/* Kategori Bazlı Analiz */}
+      {summary.category_scores && categoryKeys.length > 0 && (
+        <div className="space-y-8 mb-8">
+          <h2 className="text-2xl font-semibold">📂 Category-Based Results</h2>
+
+          {categoryKeys.map((category) => {
+            const categorySummary = summary.category_scores?.[category]
+            if (!categorySummary || !categorySummary.average_scores) return null
 
             return (
-              <div key={tool} className="text-center p-6 bg-white rounded-lg shadow">
-                <div className="text-sm text-gray-600 mb-2">{toolName}</div>
-                <div className="text-5xl font-bold text-blue-600 mb-2">{accuracy}%</div>
-                <div className="text-xs text-gray-500">Ortalama Doğruluk</div>
+              <div key={category} className="card">
+                <h3 className="text-xl font-semibold mb-4">
+                  {categoryLabels[category] || category}
+                </h3>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                  {Object.entries(categorySummary.average_scores || {}).map(([tool, scores]) => {
+                    const avgScore = (
+                      (scores.bleu || 0) +
+                      (scores.meteor || 0) +
+                      (scores.chrf || 0) +
+                      (scores.comet || 0) +
+                      (1 - (scores.ter || 0))
+                    ) / 5
+                    const accuracy = (avgScore * 100).toFixed(1)
+
+                    const toolName = tool === 'google' ? 'Google' :
+                      tool === 'deepl' ? 'DeepL' :
+                        tool === 'microsoft' ? 'Microsoft' : tool
+
+                    return (
+                      <div key={`${category}-${tool}`} className="text-center p-4 bg-white rounded-lg shadow">
+                        <div className="text-sm text-gray-600 mb-2">{toolName}</div>
+                        <div className="text-4xl font-bold text-blue-600 mb-2">{accuracy}%</div>
+                        <div className="text-xs text-gray-500">Average Accuracy</div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <BarChart
+                    data={getMetricDataFromScores(categorySummary.average_scores, 'bleu')}
+                    title="BLEU Scores (Higher = Better)"
+                    metric="BLEU"
+                  />
+                  <BarChart
+                    data={getMetricDataFromScores(categorySummary.average_scores, 'meteor')}
+                    title="METEOR Scores (Higher = Better)"
+                    metric="METEOR"
+                  />
+                  <BarChart
+                    data={getMetricDataFromScores(categorySummary.average_scores, 'chrf')}
+                    title="chrF++ Scores (Higher = Better)"
+                    metric="chrF++"
+                  />
+                  <BarChart
+                    data={getMetricDataFromScores(categorySummary.average_scores, 'ter')}
+                    title="TER Scores (Lower = Better)"
+                    metric="TER"
+                  />
+                  <BarChart
+                    data={getMetricDataFromScores(categorySummary.average_scores, 'comet')}
+                    title="COMET Scores (Higher = Better)"
+                    metric="COMET"
+                  />
+                </div>
               </div>
             )
           })}
         </div>
-      </div>
-
-      {/* Detaylı Metrikler */}
-      <div className="card mb-8">
-        <h2 className="text-xl font-semibold mb-6">📈 Detaylı Metrik Skorları</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <BarChart
-            data={getMetricData('bleu')}
-            title="BLEU Skorları (Yüksek = İyi)"
-            metric="BLEU"
-          />
-          <BarChart
-            data={getMetricData('meteor')}
-            title="METEOR Skorları (Yüksek = İyi)"
-            metric="METEOR"
-          />
-          <BarChart
-            data={getMetricData('chrf')}
-            title="chrF++ Skorları (Yüksek = İyi)"
-            metric="chrF++"
-          />
-          <BarChart
-            data={getMetricData('ter')}
-            title="TER Skorları (Dusuk = Iyi)"
-            metric="TER"
-          />
-          <BarChart
-            data={getMetricData('comet')}
-            title="COMET Skorları (Yüksek = İyi)"
-            metric="COMET"
-          />
-        </div>
-      </div>
-
-      {/* Çok Boyutlu Karşılaştırma */}
-      <div className="card mb-8">
-        <RadarChart
-          data={summary.average_scores}
-          title="Çok Boyutlu Performans Karşılaştırması"
-        />
-      </div>
+      )}
 
       {/* Bulgular */}
       <div className="card">
-        <h2 className="text-xl font-semibold mb-4">🎯 Önemli Bulgular</h2>
+        <h2 className="text-xl font-semibold mb-4">🎯 Key Findings</h2>
 
         <div className="space-y-4">
           <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded">
-            <p className="font-semibold text-green-900 mb-1">✅ En İyi Araç</p>
+            <p className="font-semibold text-green-900 mb-1">✅ Best Tool</p>
             <p className="text-green-800">
-              <strong>{summary.best_tool}</strong> en yüksek BLEU skorunu aldı: <strong>{(summary.best_bleu_score * 100)?.toFixed(1)}%</strong> doğruluk
+              <strong>{summary.best_tool}</strong> received the highest BLEU score: <strong>{(summary.best_bleu_score * 100)?.toFixed(1)}%</strong> accuracy
             </p>
           </div>
 
           <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-            <p className="font-semibold text-blue-900 mb-1">📊 Test Kapsamı</p>
+            <p className="font-semibold text-blue-900 mb-1">📊 Test Coverage</p>
             <p className="text-blue-800">
-              Toplam <strong>{summary.total_translations?.toLocaleString()}</strong> çeviri test edildi
+              Total <strong>{summary.total_translations?.toLocaleString()}</strong> translations tested
             </p>
           </div>
 
           <div className="p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
-            <p className="font-semibold text-purple-900 mb-1">📝 Değerlendirme</p>
+            <p className="font-semibold text-purple-900 mb-1">📝 Evaluation</p>
             <p className="text-purple-800">
-              Tüm çeviriler <strong>profesyonel referans çevirilerle</strong> karşılaştırıldı.
-              Skorlar BLEU, METEOR, chrF++, COMET ve TER metriklerine göre hesaplandı.
+              All translations were compared against <strong>professional reference translations</strong>.
+              Scores were computed using BLEU, METEOR, chrF++, COMET, and TER.
             </p>
           </div>
         </div>
@@ -206,21 +381,51 @@ function Analytics() {
 
       {/* Geçmiş Çeviriler */}
       <div className="card mt-8">
-        <h2 className="text-xl font-semibold mb-4">🗂 Geçmiş Çeviriler (SQLite)</h2>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+          <h2 className="text-xl font-semibold">🗂 Past Translations (SQLite)</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            {getVisiblePages().map((page, index) => {
+              if (page === 'ellipsis') {
+                return (
+                  <span key={`ellipsis-${index}`} className="px-2 text-sm text-gray-500">
+                    ...
+                  </span>
+                )
+              }
 
-        {history.length === 0 ? (
-          <p className="text-gray-600">Geçmiş kayıt bulunamadı.</p>
+              return (
+                <button
+                  key={`page-${page}`}
+                  onClick={() => setCurrentPage(page)}
+                  className={`h-9 w-9 rounded-lg border text-sm font-semibold transition-colors ${currentPage === page
+                      ? 'bg-primary-600 text-white border-primary-600'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
+                    }`}
+                >
+                  {page}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {isHistoryLoading ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+          </div>
+        ) : history.length === 0 ? (
+          <p className="text-gray-600">No history records found.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kaynak Metin</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Yön</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Kategori</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">En İyi Araç</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Skor</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Source Text</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Direction</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Best Tool</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -243,10 +448,21 @@ function Analytics() {
                         </td>
                         <td className="px-4 py-2 text-sm text-gray-700">{getDirectionLabel(row)}</td>
                         <td className="px-4 py-2 text-sm text-gray-700">{row.category || '-'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-700">{getToolName(row.best_translator || '-') || '-'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-700">
-                          {row.best_score !== null && row.best_score !== undefined ? Number(row.best_score).toFixed(4) : '-'}
-                        </td>
+                        {(() => {
+                          const best = getBestToolFromRow(row)
+                          return (
+                            <>
+                              <td className="px-4 py-2 text-sm text-gray-700">
+                                {getToolName(best.tool || '-') || '-'}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-gray-700">
+                                {best.score !== null && best.score !== undefined
+                                  ? Number(best.score).toFixed(4)
+                                  : '-'}
+                              </td>
+                            </>
+                          )
+                        })()}
                       </tr>
 
                       {isExpanded && (
@@ -255,17 +471,17 @@ function Analytics() {
                             <div className="space-y-4">
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <div className="bg-white rounded-lg border border-blue-100 p-4">
-                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Kaynak Metin</div>
+                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Source Text</div>
                                   <p className="text-sm text-gray-800 whitespace-pre-wrap">{sourceText || '-'}</p>
                                 </div>
                                 <div className="bg-white rounded-lg border border-blue-100 p-4">
-                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Referans / Beklenen Çeviri</div>
+                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Reference / Expected Translation</div>
                                   <p className="text-sm text-gray-800 whitespace-pre-wrap">{referenceText || '-'}</p>
                                 </div>
                               </div>
 
                               <div className="bg-white rounded-lg border border-blue-100 p-4">
-                                <h3 className="text-sm font-semibold text-gray-900 mb-3">Araç Bazlı Çeviri ve Skor Detayları</h3>
+                                <h3 className="text-sm font-semibold text-gray-900 mb-3">Per-Tool Translation and Score Details</h3>
                                 <div className="space-y-3">
                                   {Object.entries(row.translations || {}).map(([tool, translated]) => {
                                     const metric = row.metrics?.[tool] || {}
@@ -274,6 +490,9 @@ function Analytics() {
                                         <div className="flex items-center justify-between gap-2 mb-2">
                                           <div className="font-medium text-gray-900">{getToolName(tool)}</div>
                                           <div className="text-xs text-gray-500">{getDirectionLabel(row)}</div>
+                                        </div>
+                                        <div className="mb-2 text-sm text-gray-700">
+                                          Overall score: <strong>{(calculateAccuracy(metric) * 100).toFixed(1)}%</strong>
                                         </div>
                                         <p className="text-sm text-gray-800 mb-3 whitespace-pre-wrap">{translated || '-'}</p>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
@@ -288,7 +507,7 @@ function Analytics() {
                                   })}
 
                                   {(!row.translations || Object.keys(row.translations).length === 0) && (
-                                    <p className="text-sm text-gray-600">Bu kayıt için araç bazlı çeviri detayı bulunamadı.</p>
+                                    <p className="text-sm text-gray-600">No per-tool translation details found for this record.</p>
                                   )}
                                 </div>
                               </div>

@@ -24,32 +24,32 @@ function Home() {
       const status = await getTranslatorsStatus()
       setTranslatorsStatus(status)
     } catch (error) {
-      console.error('Çeviri araçları durumu yüklenemedi:', error)
+      console.error('Translator status could not be loaded:', error)
     }
   }
 
   const features = [
     {
-      title: 'Çoklu Karşılaştırma',
-      description: '4 dev motoru tek ekranda, milisaniyeler içinde yarıştırın.',
+      title: 'Multi-Engine Comparison',
+      description: 'Compare 4 major engines on one screen in milliseconds.',
       icon: <Zap className="w-6 h-6 text-indigo-400" />,
       color: 'blue'
     },
     {
-      title: 'Devasa Veri Seti',
-      description: '50.000+ teknik segment ile gerçek dünya testleri.',
+      title: 'Large Dataset',
+      description: 'Real-world tests with 50,000+ technical segments.',
       icon: <Database className="w-6 h-6 text-emerald-400" />,
       color: 'emerald'
     },
     {
-      title: 'Bilimsel Metrikler',
-      description: 'BLEU ve TER gibi akademik standartlarla objektif skorlar.',
+      title: 'Scientific Metrics',
+      description: 'Objective scores using academic standards like BLEU and TER.',
       icon: <BarChart3 className="w-6 h-6 text-amber-400" />,
       color: 'amber'
     },
     {
-      title: 'Akıllı Raporlama',
-      description: 'Hata paylarını ve başarı oranlarını grafiklerle analiz edin.',
+      title: 'Smart Reporting',
+      description: 'Analyze error margins and success rates with charts.',
       icon: <FileText className="w-6 h-6 text-rose-400" />,
       color: 'rose'
     }
@@ -68,28 +68,28 @@ function Home() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="inline-block px-4 py-1.5 mb-6 text-sm font-medium tracking-wider text-indigo-600 uppercase bg-indigo-50 border border-indigo-200 rounded-full">
-            v2.0 Şimdi Yayında
+            v2.0 Now Live
           </span>
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-gray-900 mb-8">
-            Çeviri Kalitesini <br />
-            <span className="text-indigo-600">Verilerle Ölçün</span>
+            Measure Translation Quality <br />
+            <span className="text-indigo-600">With Data</span>
           </h1>
           <p className="max-w-2xl mx-auto text-lg md:text-xl text-gray-600 mb-10 leading-relaxed">
-            Teknik dökümantasyon ve UI metinlerinde en iyi sonucu veren makine çeviri motorunu bilimsel metriklerle keşfedin.
+            Discover the best machine translation engine for technical documentation and UI text with scientific metrics.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link
               to="/compare"
               className="group flex items-center justify-center px-8 py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg"
             >
-              Analize Başla
+              Start Analysis
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
               to="/analytics"
               className="px-8 py-4 bg-white text-gray-800 border-2 border-gray-300 rounded-xl font-bold hover:bg-gray-50 transition-all"
             >
-              Sonuçları İncele
+              View Results
             </Link>
           </div>
         </div>
@@ -99,9 +99,9 @@ function Home() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <StatCard title="Toplam Dataset" value="50,000+" icon={<Database className="text-indigo-600" />} />
-            <StatCard title="Aktif Servis" value="4" icon={<Zap className="text-amber-600" />} />
-            <StatCard title="Analiz Metriği" value="5+" icon={<BarChart3 className="text-emerald-600" />} />
+            <StatCard title="Total Dataset" value="50,000+" icon={<Database className="text-indigo-600" />} />
+            <StatCard title="Active Services" value="4" icon={<Zap className="text-amber-600" />} />
+            <StatCard title="Analysis Metrics" value="5+" icon={<BarChart3 className="text-emerald-600" />} />
           </div>
         </div>
       </section>
@@ -109,7 +109,7 @@ function Home() {
       {/* Features Section */}
       <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-white">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Neden Bu Platform?</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Why This Platform?</h2>
           <div className="h-1 w-20 bg-indigo-600 mx-auto rounded-full" />
         </div>
 
@@ -129,7 +129,7 @@ function Home() {
       {/* Tools Section */}
       <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-16">Desteklenen Servisler</h2>
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-16">Supported Services</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {tools.map((tool) => {
@@ -141,11 +141,11 @@ function Home() {
                   <div className="flex items-center gap-2">
                     {isActive ? (
                       <div className="flex items-center text-emerald-600 text-sm font-medium">
-                        <CheckCircle2 className="w-4 h-4 mr-1.5" /> Aktif
+                        <CheckCircle2 className="w-4 h-4 mr-1.5" /> Active
                       </div>
                     ) : (
                       <div className="flex items-center text-rose-600 text-sm font-medium">
-                        <AlertCircle className="w-4 h-4 mr-1.5" /> Pasif
+                        <AlertCircle className="w-4 h-4 mr-1.5" /> Inactive
                       </div>
                     )}
                   </div>
@@ -160,15 +160,15 @@ function Home() {
       <section className="py-20 px-4">
         <div className="max-w-5xl mx-auto bg-gradient-to-r from-indigo-600 to-violet-700 rounded-[2.5rem] p-12 text-center relative overflow-hidden shadow-2xl shadow-indigo-500/20">
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Objektif Karşılaştırmaya Hazır mısınız?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Ready for Objective Comparison?</h2>
           <p className="text-indigo-100 mb-10 text-lg max-w-xl mx-auto">
-            Kendi metinlerinizi yükleyin veya hazır datasetlerimizi kullanarak en doğru çeviri motorunu hemen bulun.
+            Upload your own text or use our ready datasets to find the most accurate translation engine right away.
           </p>
           <Link
             to="/compare"
             className="inline-block px-10 py-4 bg-white text-indigo-600 rounded-xl font-bold text-lg hover:bg-slate-100 transition-colors"
           >
-            Hemen Ücretsiz Dene
+            Try It Free
           </Link>
         </div>
       </section>

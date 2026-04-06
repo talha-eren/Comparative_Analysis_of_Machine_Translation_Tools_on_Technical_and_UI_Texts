@@ -4,9 +4,9 @@ function Navbar() {
   const location = useLocation()
   
   const navItems = [
-    { path: '/', label: 'Ana Sayfa' },
-    { path: '/compare', label: 'Karşılaştır' },
-    { path: '/analytics', label: 'Sonuçlar ve Analiz' }
+    { path: '/', label: 'Home' },
+    { path: '/compare', label: 'Compare' },
+    { path: '/analytics', label: 'Results & Analysis' }
   ]
   
   return (
@@ -16,7 +16,7 @@ function Navbar() {
           <div className="flex">
             <Link to="/" className="flex items-center">
               <span className="text-xl font-bold text-primary-600">
-                MT Karşılaştırma
+                MT Comparison
               </span>
             </Link>
             

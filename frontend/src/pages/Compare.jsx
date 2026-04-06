@@ -3,7 +3,7 @@ import { translateText } from '../services/api'
 import TranslationCard from '../components/TranslationCard'
 
 function Compare() {
-  // localStorage'dan onceki sonuclari yukle
+  // Load previous results from localStorage
   const [text, setText] = useState(() => {
     const saved = localStorage.getItem('compare_text')
     return saved || ''
@@ -34,7 +34,7 @@ function Compare() {
     return total / 5
   }
 
-  // Sonuclari localStorage'a kaydet
+  // Save results to localStorage
   useEffect(() => {
     if (results) {
       localStorage.setItem('compare_results', JSON.stringify(results))
@@ -59,26 +59,26 @@ function Compare() {
 
   const handleTranslate = async () => {
     if (!text.trim()) {
-      alert('Lütfen çevrilecek metni girin')
+      alert('Please enter text to translate')
       return
     }
 
     if (selectedTools.length === 0) {
-      alert('Lütfen en az bir çeviri aracı seçin')
+      alert('Please select at least one translator')
       return
     }
 
     setIsLoading(true)
     setResults(null)
-    setLoadingStage('Çeviri araçları hazırlanıyor...')
+    setLoadingStage('Preparing translators...')
 
     try {
-      // Simüle edilmiş aşamalar
-      setTimeout(() => setLoadingStage('Metniniz analiz ediliyor...'), 500)
-      setTimeout(() => setLoadingStage('Çeviriler yapılıyor...'), 1000)
-      setTimeout(() => setLoadingStage('En iyi sonuç belirleniyor...'), 1500)
+      // Simulated stages
+      setTimeout(() => setLoadingStage('Analyzing your text...'), 500)
+      setTimeout(() => setLoadingStage('Generating translations...'), 1000)
+      setTimeout(() => setLoadingStage('Selecting best result...'), 1500)
 
-      console.log('Çeviri isteği gönderiliyor:', {
+      console.log('Sending translation request:', {
         text,
         sourceLang,
         targetLang,
@@ -96,13 +96,13 @@ function Compare() {
         category
       )
 
-      console.log('Çeviri yanıtı alındı:', data)
-      console.log('Sonuçlar state\'e yazılıyor:', data)
+      console.log('Translation response received:', data)
+      console.log('Writing results to state:', data)
       setResults(data)
     } catch (error) {
-      console.error('Çeviri hatası:', error)
-      console.error('Hata detayı:', error.response?.data || error.message)
-      alert('Çeviri sırasında bir hata oluştu: ' + (error.response?.data?.error || error.message))
+      console.error('Translation error:', error)
+      console.error('Error detail:', error.response?.data || error.message)
+      alert('An error occurred during translation: ' + (error.response?.data?.error || error.message))
     } finally {
       setIsLoading(false)
       setLoadingStage('')
@@ -111,54 +111,54 @@ function Compare() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold mb-8">Çeviri Karşılaştırma</h1>
+      <h1 className="text-3xl font-bold mb-8">Translation Comparison</h1>
 
       {/* Input Section */}
       <div className="card mb-8">
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Çevrilecek Metin
+            Text to Translate
           </label>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             className="input-field h-32 resize-none"
-            placeholder="Çevirmek istediğiniz metni buraya yazın..."
+            placeholder="Enter the text you want to translate..."
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Kaynak Dil
+              Source Language
             </label>
             <select
               value={sourceLang}
               onChange={(e) => setSourceLang(e.target.value)}
               className="input-field"
             >
-              <option value="en">İngilizce</option>
-              <option value="tr">Türkçe</option>
+              <option value="en">English</option>
+              <option value="tr">Turkish</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Hedef Dil
+              Target Language
             </label>
             <select
               value={targetLang}
               onChange={(e) => setTargetLang(e.target.value)}
               className="input-field"
             >
-              <option value="tr">Türkçe</option>
-              <option value="en">İngilizce</option>
+              <option value="tr">Turkish</option>
+              <option value="en">English</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Kategori
+              Category
             </label>
             <select
               value={category}
@@ -173,7 +173,7 @@ function Compare() {
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Çeviri Araçları
+            Translators
           </label>
           <div className="flex flex-wrap gap-3">
             {tools.map(tool => (
@@ -195,7 +195,7 @@ function Compare() {
           disabled={isLoading}
           className="btn-primary w-full py-3 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Çevriliyor...' : 'Çevir'}
+          {isLoading ? 'Translating...' : 'Translate'}
         </button>
       </div>
 
@@ -210,10 +210,10 @@ function Compare() {
               </div>
             </div>
             <h3 className="text-xl font-bold text-blue-900 mb-2">
-              {loadingStage || 'Çeviriler yapılıyor...'}
+              {loadingStage || 'Translations in progress...'}
             </h3>
             <p className="text-blue-700">
-              En iyi sonucu size sunacağız, lütfen bekleyin...
+              We will deliver the best result, please wait...
             </p>
             <div className="mt-4 flex gap-2">
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
@@ -232,8 +232,8 @@ function Compare() {
             <div className="flex items-center gap-4">
               <div className="text-5xl">✅</div>
               <div>
-                <h2 className="text-2xl font-bold text-green-900">Çeviri Tamamlandı!</h2>
-                <p className="text-green-700">En iyi sonuçları sizin için sıraladık.</p>
+                <h2 className="text-2xl font-bold text-green-900">Translation Complete!</h2>
+                <p className="text-green-700">We ranked the best results for you.</p>
               </div>
             </div>
           </div>
@@ -266,8 +266,8 @@ function Compare() {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="text-6xl">🏆</div>
                   <div>
-                    <h3 className="text-2xl font-bold text-amber-900">En İyi Sonuç</h3>
-                    <p className="text-amber-700">Sizin için en uygun çeviri aracını belirledik</p>
+                    <h3 className="text-2xl font-bold text-amber-900">Best Result</h3>
+                    <p className="text-amber-700">We identified the most suitable translator for you</p>
                   </div>
                 </div>
 
@@ -278,7 +278,7 @@ function Compare() {
                         {toolNames[bestTool]}
                       </div>
                       <div className="text-lg text-gray-600">
-                        <strong className="text-amber-600">{accuracy}%</strong> doğruluk oranı
+                        <strong className="text-amber-600">{accuracy}%</strong> accuracy
                       </div>
                     </div>
                     <div className="text-7xl">🥇</div>
@@ -286,11 +286,11 @@ function Compare() {
 
                   <div className="border-t pt-4">
                     <p className="text-gray-700">
-                      <strong>💡 Öneri:</strong> Bu metin türü için <strong className="text-amber-900">{toolNames[bestTool]}</strong> kullanmanızı öneriyoruz.
-                      {bestScore > 0.9 && " Çeviri kalitesi mükemmel seviyede."}
-                      {bestScore > 0.7 && bestScore <= 0.9 && " Çeviri kalitesi çok iyi seviyede."}
-                      {bestScore > 0.5 && bestScore <= 0.7 && " Çeviri kalitesi iyi seviyede."}
-                      {bestScore <= 0.5 && " Çeviri kalitesi orta seviyede, manuel kontrol önerilir."}
+                      <strong>💡 Tip:</strong> For this text type, we recommend <strong className="text-amber-900">{toolNames[bestTool]}</strong>.
+                      {bestScore > 0.9 && " Translation quality is excellent."}
+                      {bestScore > 0.7 && bestScore <= 0.9 && " Translation quality is very good."}
+                      {bestScore > 0.5 && bestScore <= 0.7 && " Translation quality is good."}
+                      {bestScore <= 0.5 && " Translation quality is moderate; manual review is recommended."}
                     </p>
                   </div>
                 </div>
@@ -324,7 +324,7 @@ function Compare() {
 
             return (
               <div className="card mb-6 bg-blue-50 border-blue-200">
-                <h3 className="text-lg font-semibold mb-4">📊 Tüm Sonuçlar (En İyiden En Kötüye)</h3>
+                <h3 className="text-lg font-semibold mb-4">📊 All Results (Best to Worst)</h3>
                 <div className="space-y-3">
                   {sortedTools.map((tool, index) => {
                     const metrics = results?.metrics?.[tool]
@@ -343,7 +343,7 @@ function Compare() {
                               {toolNames[tool]}
                             </div>
                             <div className="text-sm text-gray-500">
-                              Sıra: {index + 1}
+                              Rank: {index + 1}
                             </div>
                           </div>
                         </div>
@@ -351,7 +351,7 @@ function Compare() {
                           <div className={`text-3xl font-bold ${colors[index] || 'text-gray-700'}`}>
                             {accuracy}%
                           </div>
-                          <div className="text-xs text-gray-500">Doğruluk</div>
+                          <div className="text-xs text-gray-500">Accuracy</div>
                         </div>
                       </div>
                     )
@@ -380,7 +380,7 @@ function Compare() {
 
             return (
               <div>
-                <h3 className="text-xl font-semibold mb-4">Detaylı Çeviri Sonuçları</h3>
+                <h3 className="text-xl font-semibold mb-4">Detailed Translation Results</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {sortedTools.map(tool => (
                     <TranslationCard

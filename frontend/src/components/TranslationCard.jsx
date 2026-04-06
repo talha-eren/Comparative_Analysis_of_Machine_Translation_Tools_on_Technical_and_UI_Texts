@@ -1,4 +1,14 @@
 function TranslationCard({ tool, translation, metrics, timeTaken, isLoading }) {
+  const calculateOverallScore = (metricBlock) => {
+    if (!metricBlock) return null
+    const total =
+      (metricBlock.bleu || 0) +
+      (metricBlock.meteor || 0) +
+      (metricBlock.chrf || 0) +
+      (metricBlock.comet || 0) +
+      (1 - (metricBlock.ter || 0))
+    return total / 5
+  }
   const getScoreColor = (score) => {
     if (score >= 0.8) return 'text-success-600'
     if (score >= 0.6) return 'text-warning-600'
@@ -41,11 +51,17 @@ function TranslationCard({ tool, translation, metrics, timeTaken, isLoading }) {
       ) : (
         <>
           <div className="mb-4 p-4 bg-gray-50 rounded-lg min-h-[100px]">
-            <p className="text-gray-800 whitespace-pre-wrap">{translation || 'Çeviri yapılamadı'}</p>
+            <p className="text-gray-800 whitespace-pre-wrap">{translation || 'Translation unavailable'}</p>
           </div>
 
           {metrics && (
             <div className="space-y-2">
+              <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                <span className="text-gray-700">Overall score</span>
+                <span className="font-semibold text-gray-900">
+                  {(calculateOverallScore(metrics) * 100).toFixed(1)}%
+                </span>
+              </div>
               <MetricBar label="BLEU" score={metrics.bleu} />
               <MetricBar label="METEOR" score={metrics.meteor} />
               <MetricBar label="chrF++" score={metrics.chrf} />
@@ -59,7 +75,7 @@ function TranslationCard({ tool, translation, metrics, timeTaken, isLoading }) {
               onClick={() => navigator.clipboard.writeText(translation)}
               className="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
             >
-              Kopyala
+              Copy
             </button>
           )}
         </>

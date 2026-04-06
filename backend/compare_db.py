@@ -133,6 +133,8 @@ def save_comparison(
 ) -> Optional[int]:
     if not metrics:
         return None
+    if category:
+        category = category.strip().lower()
     best_tool, best_score = _best_from_metrics(metrics)
     text_en, text_tr = _en_tr_pair(
         source_lang, target_lang, source_text, reference, translations, best_tool
@@ -221,5 +223,15 @@ def list_comparisons(limit: Optional[int] = 100, offset: int = 0) -> List[dict]:
                 item["translations"] = None
             rows.append(item)
         return rows
+    finally:
+        conn.close()
+
+
+def count_comparisons() -> int:
+    conn = connect()
+    try:
+        cur = conn.execute("SELECT COUNT(*) AS total FROM translation_comparisons")
+        row = cur.fetchone()
+        return int(row[0]) if row and row[0] is not None else 0
     finally:
         conn.close()
